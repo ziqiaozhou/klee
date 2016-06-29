@@ -82,7 +82,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Process.h"
 #include "llvm/Support/raw_ostream.h"
-
+#include "llvm/Support/FileSystem.h"
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 5)
 #include "llvm/Support/CallSite.h"
 #else
@@ -334,7 +334,7 @@ Executor::Executor(const InterpreterOptions &opts, InterpreterHandler *ih)
     std::string ErrorInfo;
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 5)
     debugInstFile = new llvm::raw_fd_ostream(debug_file_name.c_str(), ErrorInfo,
-                                             llvm::sys::fs::OpenFlags::F_Text),
+                                             llvm::sys::fs::OpenFlags::F_Text);
 #else
     debugInstFile =
         new llvm::raw_fd_ostream(debug_file_name.c_str(), ErrorInfo);
