@@ -103,7 +103,22 @@ private:
       }
     }
   }
-
+void printType(SymbolType type,PrintContext* PC){
+  switch(type){
+			  case TYPE_NATIVE:
+				  *PC<<"others";
+				  break;
+			  case TYPE_SECRET:
+				  *PC<<"secret";
+				  break;
+			  case TYPE_ATTACKER_O:
+				  *PC<<"attacker observable";
+				  break;
+			  case TYPE_ATTACKER_C:
+				  *PC<<"attacker controlled";
+				  break;
+		  }
+}
   void scan1(const ref<Expr> &e) {
     if (!isa<ConstantExpr>(e)) {
       if (couldPrint.insert(e).second) {
@@ -388,7 +403,8 @@ public:
 	    printWidth(PC, e);
 	    PC << ' ';
 	    printRead(base, PC, PC.pos);
-	    PC << ')';
+	    printType(base->updates.root->type,&PC);
+		PC << ')';
 	    return;
 	  }
         }
@@ -451,6 +467,10 @@ void ExprPPrinter::printSingleExpr(llvm::raw_ostream &os, const ref<Expr> &e) {
   PrintContext PC(os);
   p.print(e, PC);
 }
+ void ExprPPrinter::printAnalyzedConstraints(llvm::raw_ostream &os,
+                                    const ConstraintManager &constraints) {
+  printAnalyzedQuery(os, constraints, ConstantExpr::alloc(false, Expr::Bool));
+}
 
 void ExprPPrinter::printConstraints(llvm::raw_ostream &os,
                                     const ConstraintManager &constraints) {
@@ -466,6 +486,181 @@ struct ArrayPtrsByName {
 };
 }
 
+
+ConstraintManager::ConstaintType ConstraintManager::getConstraintType(ref<Expr> exprp,unsigned _index){
+	unsigned index=_index;
+	int nKids=exprp->getNumKids();
+	if(this->ExprBindings.count(exprp)){
+		unsigned int re_index=this->ExprBindings[exprp];
+		if(index==0){
+			index=re_index;
+			(this->TypeBindings[re_index])|=TYPE_NATIVE;
+		}
+		if(re_index!=index){
+			for(ConstraintManager::ExprBindingIter  element= this->ExprBindings.begin();element!=this->ExprBindings.end();element++){  
+				if(element->second==re_index){
+					element->second=index; 
+				}
+			}
+			this->TypeBindings[index]|=this->TypeBindings[re_index];   
+		}
+		return index;
+	}
+	if(nKids==1)
+	{
+		if(exprp->getKind()==Expr::Read){
+			ReadExpr * re=cast<ReadExpr>(exprp);
+			unsigned int re_index;
+			if(re->updates.root->isSymbolicArray()){
+				if(this->ExprBindings.count(re))
+				{
+					re_index=this->ExprBindings[exprp];
+					if(index){
+						if(index!=re_index){
+							for(ConstraintManager::ExprBindingIter  element= this->ExprBindings.begin();element!=this->ExprBindings.end();element++){  
+								if(element->second==re_index){
+									element->second=index; 
+								}
+							}
+
+							this->TypeBindings[index]|=this->TypeBindings[re_index];
+						}
+					}else
+					{	index=re_index;
+						this->TypeBindings[re_index]|=TYPE_NATIVE;
+					}
+				}else{
+					unsigned re_index=this->TypeBindings.size()+1;
+					this->TypeBindings.insert(std::pair<unsigned,ConstaintType>(re_index,re->type));
+					this->ExprBindings.insert(std::pair<ref<Expr>,unsigned>(re,re_index));
+				}
+			}
+		}
+		return index;
+	}
+	else
+	  for(int i=0;i<nKids;i++){
+		  ref<Expr> subexprp=exprp->getKid(i);
+		  index=getConstraintType(subexprp,index);
+	  }
+	return index;
+}
+void ExprPPrinter::printAnalyzedQuery(llvm::raw_ostream &os,
+                              const ConstraintManager &constraints,
+                              const ref<Expr> &q,
+                              const ref<Expr> *evalExprsBegin,
+                              const ref<Expr> *evalExprsEnd,
+                              const Array * const *evalArraysBegin,
+                              const Array * const *evalArraysEnd,
+                              bool printArrayDecls) {
+
+	PPrinter p(os);
+  for (ConstraintManager::const_iterator it = constraints.begin(),
+         ie = constraints.end(); it != ie; ++it)
+    p.scan(*it);
+  p.scan(q);
+
+  for (const ref<Expr> *it = evalExprsBegin; it != evalExprsEnd; ++it)
+    p.scan(*it);
+
+  PrintContext PC(os);
+  
+  // Print array declarations.
+  if (printArrayDecls) {
+    for (const Array * const* it = evalArraysBegin; it != evalArraysEnd; ++it)
+      p.usedArrays.insert(*it);
+    std::vector<const Array *> sortedArray(p.usedArrays.begin(),
+                                           p.usedArrays.end());
+    std::sort(sortedArray.begin(), sortedArray.end(), ArrayPtrsByName());
+    for (std::vector<const Array *>::iterator it = sortedArray.begin(),
+                                              ie = sortedArray.end();
+         it != ie; ++it) {
+      const Array *A = *it;
+      PC << "array " << A->name << "[" << A->size << "]"
+         << " : w" << A->domain << " -> w" << A->range << " = ";
+      if (A->isSymbolicArray()) {
+		  switch(A->type){
+			  case TYPE_NATIVE:
+				  break;
+			  case TYPE_SECRET:
+				  PC<<"secret";
+				  break;
+			  case TYPE_ATTACKER_O:
+				  PC<<"attacker observable";
+				  break;
+			  case TYPE_ATTACKER_C:
+				  PC<<"attacker controlled";
+				  break;
+		  }
+        PC << "symbolic";
+      } else {
+        PC << "[";
+        for (unsigned i = 0, e = A->size; i != e; ++i) {
+          if (i)
+            PC << " ";
+          PC << A->constantValues[i];
+        }
+        PC << "]";
+      }
+      PC.breakLine();
+    }
+  }
+
+  PC << "(query [";
+#define Y(X,PC) PC<<#X;
+  // Ident at constraint list;
+  unsigned indent = PC.pos;
+  for (ConstraintManager::const_iterator it = constraints.begin(),
+			  ie = constraints.end(); it != ie;) {
+	  ref<Expr> expr=*it;
+	  ConstraintManager* c=( ConstraintManager*)&constraints;
+	  unsigned index=c->getConstraintType(expr);
+	  Y(constraints.TypeBindings[index],PC);
+	  PC<<"||||";
+	  
+  }
+  for (ConstraintManager::const_iterator it = constraints.begin(),
+         ie = constraints.end(); it != ie;) {
+	  p.print(*it, PC);
+    ++it;
+    if (it != ie)
+      PC.breakLine(indent);
+  }
+  PC << ']';
+
+  p.printSeparator(PC, constraints.empty(), indent-1);
+  p.print(q, PC);
+
+  // Print expressions to obtain values for, if any.
+  if (evalExprsBegin != evalExprsEnd) {
+    p.printSeparator(PC, q->isFalse(), indent-1);
+    PC << '[';
+    for (const ref<Expr> *it = evalExprsBegin; it != evalExprsEnd; ++it) {
+      p.print(*it, PC, /*printConstWidth*/true);
+      if (it + 1 != evalExprsEnd)
+        PC.breakLine(indent);
+    }
+    PC << ']';
+  }
+
+  // Print arrays to obtain values for, if any.
+  if (evalArraysBegin != evalArraysEnd) {
+    if (evalExprsBegin == evalExprsEnd)
+      PC << " []";
+
+    PC.breakLine(indent - 1);
+    PC << '[';
+    for (const Array * const* it = evalArraysBegin; it != evalArraysEnd; ++it) {
+      PC << (*it)->name;
+      if (it + 1 != evalArraysEnd)
+        PC.breakLine(indent);
+    }
+    PC << ']';
+  }
+
+  PC << ')';
+  PC.breakLine();
+}
 void ExprPPrinter::printQuery(llvm::raw_ostream &os,
                               const ConstraintManager &constraints,
                               const ref<Expr> &q,

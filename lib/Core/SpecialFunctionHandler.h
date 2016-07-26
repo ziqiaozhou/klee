@@ -14,7 +14,7 @@
 #include <map>
 #include <vector>
 #include <string>
-
+#include<klee/Expr.h>
 namespace llvm {
   class Function;
 }
@@ -63,7 +63,6 @@ namespace klee {
       bool operator==(const_iterator& rhs) { return (rhs.base + rhs.index) == (this->base + this->index);}
       bool operator!=(const_iterator& rhs) { return !(*this == rhs);}
     };
-
     static const_iterator begin();
     static const_iterator end();
     static int size();
@@ -93,7 +92,7 @@ namespace klee {
     std::string readStringAtAddress(ExecutionState &state, ref<Expr> address);
     
     /* Handlers */
-
+	void handleMakeType(SymbolType type,ExecutionState &state,KInstruction *target,std::vector< ref<Expr> > &arguments);
 #define HANDLER(name) void name(ExecutionState &state, \
                                 KInstruction *target, \
                                 std::vector< ref<Expr> > &arguments)
@@ -114,7 +113,10 @@ namespace klee {
     HANDLER(handleGetValue);
     HANDLER(handleIsSymbolic);
     HANDLER(handleMakeSymbolic);
-    HANDLER(handleMalloc);
+    HANDLER(handleMakeSecret);	
+    HANDLER(handleMakeAttackerO);
+	HANDLER(handleMakeAttackerC);
+	HANDLER(handleMalloc);
     HANDLER(handleMarkGlobal);
     HANDLER(handleMerge);
     HANDLER(handleNew);

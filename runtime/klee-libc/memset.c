@@ -10,8 +10,9 @@
 #include <stdlib.h>
 
 void *memset(void * dst, int s, size_t count) {
-    char * a = dst;
-    while (count-- > 0)
+   // char * a = dst;
+    volatile char * a = dst;
+	while (count-- > 0)
       *a++ = s;
     return dst;
 }

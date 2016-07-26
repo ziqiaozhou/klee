@@ -22,7 +22,8 @@
 #include "TimingSolver.h"
 #include "UserSearcher.h"
 #include "ExecutorTimerInfo.h"
-
+#include<stdio.h>
+#include<iostream>
 
 #include "klee/ExecutionState.h"
 #include "klee/Expr.h"
@@ -81,6 +82,8 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Process.h"
+
+#include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/FileSystem.h"
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 5)
@@ -399,29 +402,36 @@ Executor::~Executor() {
 void Executor::initializeGlobalObject(ExecutionState &state, ObjectState *os,
                                       const Constant *c, 
                                       unsigned offset) {
+	
 #if LLVM_VERSION_CODE <= LLVM_VERSION(3, 1)
   TargetData *targetData = kmodule->targetData;
 #else
   DataLayout *targetData = kmodule->targetData;
 #endif
-  if (const ConstantVector *cp = dyn_cast<ConstantVector>(c)) {
-    unsigned elementSize =
+   if (const ConstantVector *cp = dyn_cast<ConstantVector>(c)) {
+	   klee_warning("1");
+	   unsigned elementSize =
       targetData->getTypeStoreSize(cp->getType()->getElementType());
     for (unsigned i=0, e=cp->getNumOperands(); i != e; ++i)
       initializeGlobalObject(state, os, cp->getOperand(i), 
 			     offset + i*elementSize);
   } else if (isa<ConstantAggregateZero>(c)) {
-    unsigned i, size = targetData->getTypeStoreSize(c->getType());
+   // klee_warning("2");
+	  unsigned i, size = targetData->getTypeStoreSize(c->getType());
     for (i=0; i<size; i++)
       os->write8(offset+i, (uint8_t) 0);
   } else if (const ConstantArray *ca = dyn_cast<ConstantArray>(c)) {
-    unsigned elementSize =
+//klee_warning("3");
+	  unsigned elementSize =
       targetData->getTypeStoreSize(ca->getType()->getElementType());
-    for (unsigned i=0, e=ca->getNumOperands(); i != e; ++i)
-      initializeGlobalObject(state, os, ca->getOperand(i), 
+    
+	  for (unsigned i=0, e=ca->getNumOperands(); i != e; ++i)
+	  { 	  initializeGlobalObject(state, os, ca->getOperand(i), 
 			     offset + i*elementSize);
+	  }
   } else if (const ConstantStruct *cs = dyn_cast<ConstantStruct>(c)) {
-    const StructLayout *sl =
+	  klee_warning("4");
+	  const StructLayout *sl =
       targetData->getStructLayout(cast<StructType>(cs->getType()));
     for (unsigned i=0, e=cs->getNumOperands(); i != e; ++i)
       initializeGlobalObject(state, os, cs->getOperand(i), 
@@ -429,21 +439,30 @@ void Executor::initializeGlobalObject(ExecutionState &state, ObjectState *os,
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 1)
   } else if (const ConstantDataSequential *cds =
                dyn_cast<ConstantDataSequential>(c)) {
-    unsigned elementSize =
+	 // klee_warning("5");
+	  unsigned elementSize =
       targetData->getTypeStoreSize(cds->getElementType());
     for (unsigned i=0, e=cds->getNumElements(); i != e; ++i)
       initializeGlobalObject(state, os, cds->getElementAsConstant(i),
                              offset + i*elementSize);
 #endif
   } else if (!isa<UndefValue>(c)) {
-    unsigned StoreBits = targetData->getTypeStoreSizeInBits(c->getType());
-    ref<ConstantExpr> C = evalConstant(c);
+	  //klee_warning("6\n");
 
+	  unsigned StoreBits = targetData->getTypeStoreSizeInBits(c->getType());
+    
+	  //klee_warning("6-1");
+	  ref<ConstantExpr> C = evalConstant(c);
+
+	//  klee_warning("6-2,%d",C->getWidth());
     // Extend the constant if necessary;
     assert(StoreBits >= C->getWidth() && "Invalid store size!");
-    if (StoreBits > C->getWidth())
-      C = C->ZExt(StoreBits);
+    if (StoreBits > C->getWidth()){
+  //  klee_warning("6-2-in %d,%d",C->getWidth(),StoreBits);
+		C = C->ZExt(StoreBits);
+	}
 
+//	  klee_warning("6-3");
     os->write(offset, C);
   }
 }
@@ -573,12 +592,14 @@ void Executor::initializeGlobals(ExecutionState &state) {
           addr = externalDispatcher->resolveSymbol(i->getName());
         }
         if (!addr)
-          klee_error("unable to load symbol(%s) while initializing globals.", 
+          klee_warning("unable to load symbol(%s) while initializing globals.", 
                      i->getName().data());
-
+		else{
         for (unsigned offset=0; offset<mo->size; offset++)
           os->write8(offset, ((unsigned char*)addr)[offset]);
-      }
+	//	klee_warning("ok load symbol(%s) at address{%s}",i->getName().data(),addr);
+		}
+	  }
     } else {
       LLVM_TYPE_Q Type *ty = i->getType()->getElementType();
       uint64_t size = kmodule->targetData->getTypeStoreSize(ty);
@@ -610,10 +631,10 @@ void Executor::initializeGlobals(ExecutionState &state) {
       MemoryObject *mo = globalObjects.find(i)->second;
       const ObjectState *os = state.addressSpace.findObject(mo);
       assert(os);
-      ObjectState *wos = state.addressSpace.getWriteable(mo, os);
-      
-      initializeGlobalObject(state, wos, i->getInitializer(), 0);
-      // if(i->isConstant()) os->setReadOnly(true);
+	  ObjectState *wos = state.addressSpace.getWriteable(mo, os);
+if(strcmp(i->getName().data(),"__sk_run_filter.jumptable"))
+	initializeGlobalObject(state, wos, i->getInitializer(), 0);
+	  // if(i->isConstant()) os->setReadOnly(true);
     }
   }
 }
@@ -1022,7 +1043,7 @@ ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
       return cast<ConstantExpr>(res);
     } else {
       // Constant{Vector}
-      llvm::report_fatal_error("invalid argument to evalConstant()");
+      //`llvm::report_fatal_error("invalid argument to evalConstant()");
     }
   }
 }
@@ -3292,7 +3313,7 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
     while (!state.arrayNames.insert(uniqueName).second) {
       uniqueName = name + "_" + llvm::utostr(++id);
     }
-    const Array *array = arrayCache.CreateArray(uniqueName, mo->size);
+    const Array *array = arrayCache.CreateArray(uniqueName, mo->size,0,0,Expr::Int32,Expr::Int8,mo->type);
     bindObjectInState(state, mo, false, array);
     state.addSymbolic(mo, array);
     
@@ -3468,6 +3489,45 @@ unsigned Executor::getSymbolicPathStreamID(const ExecutionState &state) {
   assert(symPathWriter);
   return state.symPathOS.getID();
 }
+std::string getOutputFilename(const std::string &filename) {
+  SmallString<128> path("klee-last/");
+  llvm::sys::path::append(path,filename);
+  return path.str();
+}
+llvm::raw_fd_ostream *openOutputFile(const std::string &filename) {
+  llvm::raw_fd_ostream *f;
+  std::string Error;
+  std::string path = getOutputFilename(filename);
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_None);
+#elif LLVM_VERSION_CODE >= LLVM_VERSION(3,4)
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_Binary);
+#else
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::raw_fd_ostream::F_Binary);
+#endif
+  if (!Error.empty()) {
+    klee_error("error opening file \"%s\".  KLEE may have run out of file "
+               "descriptors: try to increase the maximum number of open file "
+               "descriptors by using ulimit (%s).",
+               filename.c_str(), Error.c_str());
+    delete f;
+    f = NULL;
+  }
+
+  return f;
+}
+
+std::string getTestFilename(const std::string &suffix, unsigned id) {
+  std::stringstream filename;
+  filename << "test" << std::setfill('0') << std::setw(6) << id << '.' << suffix;
+  return filename.str();
+}
+
+llvm::raw_fd_ostream *openTestFile(const std::string &suffix,
+                                                unsigned id) {
+  return openOutputFile(getTestFilename(suffix, id));
+}
+
 
 void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
                                 Interpreter::LogType logFormat) {
@@ -3482,11 +3542,24 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
     free(log);
   } break;
 
+  case ANALYZE: {
+    std::string Str;
+    llvm::raw_string_ostream info(Str);
+    ExprPPrinter::printAnalyzedConstraints(info, state.constraints);    
+	
+	//llvm::raw_ostream *os = openTestFile("tree",0);
+	//processTree->dump(*os);
+	res = info.str();
+  } break;
   case KQUERY: {
     std::string Str;
     llvm::raw_string_ostream info(Str);
     ExprPPrinter::printConstraints(info, state.constraints);
-    res = info.str();
+	//llvm::raw_ostream *os = openTestFile("tree",0);
+//	std::cout<<"tree";
+//	processTree->dump(*os);
+//	delete os;
+	res = info.str();
   } break;
 
   case SMTLIB2: {

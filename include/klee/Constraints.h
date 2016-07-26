@@ -19,22 +19,25 @@
 namespace klee {
 
 class ExprVisitor;
-  
+
 class ConstraintManager {
 public:
   typedef std::vector< ref<Expr> > constraints_ty;
   typedef constraints_ty::iterator iterator;
   typedef constraints_ty::const_iterator const_iterator;
-
+  typedef SymbolType ConstaintType; 
+typedef std::map<ref<Expr>,unsigned>::iterator ExprBindingIter;
   ConstraintManager() {}
-
-  // create from constraints with no optimization
+  std::map<unsigned,ConstaintType> TypeBindings;
+  std::map<ref<Expr>,unsigned>ExprBindings;
+	  // create from constraints with no optimization
   explicit
   ConstraintManager(const std::vector< ref<Expr> > &_constraints) :
     constraints(_constraints) {}
 
   ConstraintManager(const ConstraintManager &cs) : constraints(cs.constraints) {}
 
+  ConstaintType getConstraintType(ref<Expr> exprp,unsigned _index=0);
   typedef std::vector< ref<Expr> >::const_iterator constraint_iterator;
 
   // given a constraint which is known to be valid, attempt to 
@@ -42,6 +45,8 @@ public:
   void simplifyForValidConstraint(ref<Expr> e);
 
   ref<Expr> simplifyExpr(ref<Expr> e) const;
+
+
 
   void addConstraint(ref<Expr> e);
   

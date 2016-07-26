@@ -30,14 +30,18 @@ namespace llvm {
 }
 
 namespace klee {
-
 class Array;
 class ArrayCache;
 class ConstantExpr;
 class ObjectState;
 
 template<class T> class ref;
-
+typedef unsigned int SymbolType;
+#define	TYPE_NATIVE 0
+#define	TYPE_OTHER 1
+#define	TYPE_SECRET 2
+#define	TYPE_ATTACKER_C 4
+#define	TYPE_ATTACKER_O 8
 
 /// Class representing symbolic expressions.
 /**
@@ -102,7 +106,7 @@ public:
   static const Width Int32 = 32;
   static const Width Int64 = 64;
   static const Width Fl80 = 80;
-  
+  SymbolType type;
 
   enum Kind {
     InvalidKind = -1,
@@ -178,7 +182,7 @@ protected:
   unsigned hashValue;
   
 public:
-  Expr() : refCount(0) { Expr::count++; }
+  Expr() : refCount(0),type(TYPE_NATIVE) { Expr::count++; }
   virtual ~Expr() { Expr::count--; } 
 
   virtual Kind getKind() const = 0;
@@ -462,6 +466,7 @@ public:
   /// the array size.
   const std::vector<ref<ConstantExpr> > constantValues;
 
+  SymbolType type;
 private:
   unsigned hashValue;
 
@@ -481,6 +486,12 @@ private:
   /// not parse correctly since two arrays with the same name cannot be
   /// distinguished once printed.
   Array(const std::string &_name, uint64_t _size,
+        const ref<ConstantExpr> *constantValuesBegin = 0,
+        const ref<ConstantExpr> *constantValuesEnd = 0,
+        Expr::Width _domain = Expr::Int32, Expr::Width _range = Expr::Int8);
+
+
+  Array(const std::string &_name, uint64_t _size,SymbolType type=TYPE_NATIVE,
         const ref<ConstantExpr> *constantValuesBegin = 0,
         const ref<ConstantExpr> *constantValuesEnd = 0,
         Expr::Width _domain = Expr::Int32, Expr::Width _range = Expr::Int8);
@@ -563,7 +574,7 @@ public:
 
 private:
   ReadExpr(const UpdateList &_updates, const ref<Expr> &_index) : 
-    updates(_updates), index(_index) { assert(updates.root); }
+    updates(_updates), index(_index) { assert(updates.root); type=updates.root->type; }
 
 public:
   static bool classof(const Expr *E) {

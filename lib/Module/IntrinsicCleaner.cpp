@@ -232,7 +232,12 @@ bool IntrinsicCleanerPass::runOnBasicBlock(BasicBlock &b, Module &M) {
         dirty = true;
         break;
       }
-      case Intrinsic::objectsize: {
+	  case Intrinsic::gcroot: {
+		ii->eraseFromParent();
+		dirty = true;
+		break;
+							   }
+	  case Intrinsic::objectsize: {
         // We don't know the size of an object in general so we replace
         // with 0 or -1 depending on the second argument to the intrinsic.
         assert(ii->getNumArgOperands() == 2 && "wrong number of arguments");

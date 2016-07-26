@@ -41,7 +41,7 @@ private:
 public:
   unsigned id;
   uint64_t address;
-
+  mutable SymbolType type;
   /// size in bytes
   unsigned size;
   mutable std::string name;
@@ -81,7 +81,8 @@ public:
       size(0),
       isFixed(true),
       parent(NULL),
-      allocSite(0) {
+      allocSite(0),
+	type(TYPE_NATIVE){
   }
 
   MemoryObject(uint64_t _address, unsigned _size, 
@@ -99,7 +100,8 @@ public:
       fake_object(false),
       isUserSpecified(false),
       parent(_parent), 
-      allocSite(_allocSite) {
+      allocSite(_allocSite),
+	type(TYPE_NATIVE){
   }
 
   ~MemoryObject();
@@ -110,9 +112,14 @@ public:
   void setName(std::string name) const {
     this->name = name;
   }
-
+  void setType(SymbolType _type)const{
+	  this->type=_type;
+  }
+  SymbolType getType()const{
+	  return this->type;
+  }
   ref<ConstantExpr> getBaseExpr() const { 
-    return ConstantExpr::create(address, Context::get().getPointerWidth());
+	  return ConstantExpr::create(address, Context::get().getPointerWidth());
   }
   ref<ConstantExpr> getSizeExpr() const { 
     return ConstantExpr::create(size, Context::get().getPointerWidth());

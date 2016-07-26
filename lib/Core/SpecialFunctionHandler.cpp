@@ -12,7 +12,9 @@
 #include "TimingSolver.h"
 
 #include "klee/ExecutionState.h"
-
+#include<stdlib.h>
+#include<stdio.h>
+#include<iostream>
 #include "klee/Internal/Module/KInstruction.h"
 #include "klee/Internal/Module/KModule.h"
 #include "klee/Internal/Support/Debug.h"
@@ -95,6 +97,11 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("klee_get_errno", handleGetErrno, true),
   add("klee_is_symbolic", handleIsSymbolic, true),
   add("klee_make_symbolic", handleMakeSymbolic, false),
+
+  add("klee_make_attackerO", handleMakeAttackerO, false),
+  add("klee_make_attackerC", handleMakeAttackerC, false),
+  add("klee_make_secret", handleMakeSecret, false),
+  
   add("klee_mark_global", handleMarkGlobal, false),
   add("klee_merge", handleMerge, false),
   add("klee_prefer_cex", handlePreferCex, false),
@@ -671,9 +678,68 @@ void SpecialFunctionHandler::handleDefineFixedObject(ExecutionState &state,
   executor.bindObjectInState(state, mo, false);
   mo->isUserSpecified = true; // XXX hack;
 }
-
-void SpecialFunctionHandler::handleMakeSymbolic(ExecutionState &state,
+void SpecialFunctionHandler::handleMakeType(SymbolType type,ExecutionState &state,
                                                 KInstruction *target,
+                                                std::vector<ref<Expr> > &arguments) {
+  std::string name;
+  // FIXME: For backwards compatibility, we should eventually enforce the
+  // correct arguments.
+  if (arguments.size() == 2) {
+    name = "unnamed";
+  } else {
+    // FIXME: Should be a user.err, not an assert.
+	  assert(arguments.size()==3 &&
+				  "invalid number of arguments to klee_make_secret");  
+	  name = readStringAtAddress(state, arguments[2]);
+  }
+  std::cout<<"type"<<type<<name;
+  Executor::ExactResolutionList rl;
+  executor.resolveExact(state, arguments[0], rl, "make_secret");
+
+  for (Executor::ExactResolutionList::iterator it = rl.begin(), 
+			  ie = rl.end(); it != ie; ++it) {
+	  const MemoryObject *mo = it->first.first;
+	  mo->setName(name);
+	  mo->setType(type); 
+	  const ObjectState *old = it->first.second;
+	  ExecutionState *s = it->second;
+	  // FIXME: Type coercion should be done consistently somewhere.
+	  bool res;
+	  bool success __attribute__ ((unused)) =
+		  executor.solver->mustBeTrue(*s, 
+					  EqExpr::create(ZExtExpr::create(arguments[1],
+							  Context::get().getPointerWidth()),
+						  mo->getSizeExpr()),
+					  res);
+	  assert(success && "FIXME: Unhandled solver failure");
+
+	  if (res) {
+		  executor.executeMakeSymbolic(*s, mo, name);
+	  } else {      
+		  executor.terminateStateOnError(*s, 
+					  "wrong size given to klee_make_secret[_name]", 
+					  "user.err");
+	  }
+  }
+}
+void  SpecialFunctionHandler::handleMakeSecret(ExecutionState &state,
+                                                KInstruction *target,
+                                                std::vector<ref<Expr> > &arguments) {
+	handleMakeType(TYPE_SECRET,state,target,arguments);
+}
+
+void  SpecialFunctionHandler::handleMakeAttackerO(ExecutionState &state,
+                                                KInstruction *target,
+                                                std::vector<ref<Expr> > &arguments) {
+	handleMakeType(TYPE_ATTACKER_O,state,target,arguments);
+}
+void  SpecialFunctionHandler::handleMakeAttackerC(ExecutionState &state,
+                                                KInstruction *target,
+                                                std::vector<ref<Expr> > &arguments) {
+	handleMakeType(TYPE_ATTACKER_C,state,target,arguments);
+}
+void SpecialFunctionHandler::handleMakeSymbolic(ExecutionState &state,
+			KInstruction *target,
                                                 std::vector<ref<Expr> > &arguments) {
   std::string name;
 

@@ -10,8 +10,9 @@
 char *strcpy(char *to, const char *from) {
   char *start = to;
 
-  while ((*to = *from))
-    ++to, ++from;
+  while ((*to = *from)){
+	  ++to, ++from;
+  }
 
   return start;
 }

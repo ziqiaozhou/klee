@@ -69,7 +69,7 @@
 #include <iomanip>
 #include <iterator>
 #include <sstream>
-
+#include<iostream>
 
 using namespace llvm;
 using namespace klee;
@@ -108,6 +108,9 @@ namespace {
   cl::opt<bool>
   WritePCs("write-pcs",
             cl::desc("Write .pc files for each test case"));
+cl::opt<bool>
+  WriteAnalyzedPCs("write-a-pcs",
+            cl::desc("Write .apc files for each test case"));
 
   cl::opt<bool>
   WriteSMT2s("write-smt2s",
@@ -485,10 +488,16 @@ void KleeHandler::processTestCase(const ExecutionState &state,
       std::string constraints;
       m_interpreter->getConstraintLog(state, constraints,Interpreter::KQUERY);
       llvm::raw_ostream *f = openTestFile("pc", id);
-      *f << constraints;
-      delete f;
-    }
-
+	  *f << constraints;
+	  delete f;
+	}
+if(WriteAnalyzedPCs){
+	std::string constraints;
+	m_interpreter->getConstraintLog(state, constraints,Interpreter::ANALYZE);
+	llvm::raw_ostream *f = openTestFile("apc", id);
+	*f << constraints;
+	delete f;
+}
     if (WriteCVCs) {
       // FIXME: If using Z3 as the core solver the emitted file is actually
       // SMT-LIBv2 not CVC which is a bit confusing

@@ -36,6 +36,7 @@ extern "C" {
    */
   void klee_make_symbolic(void *addr, size_t nbytes, const char *name);
 
+  void klee_make_secret(void *addr, size_t nbytes, const char *name);
   /* klee_range - Construct a symbolic value in the signed interval
    * [begin,end).
    *
