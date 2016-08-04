@@ -77,6 +77,7 @@
 #include "llvm/TypeBuilder.h"
 #endif
 #endif
+#include "llvm/IR/InlineAsm.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/CommandLine.h"
@@ -551,16 +552,22 @@ void Executor::initializeGlobals(ExecutionState &state) {
   for (Module::const_global_iterator i = m->global_begin(),
          e = m->global_end();
        i != e; ++i) {
-    if (i->isDeclaration()) {
-      // FIXME: We have no general way of handling unknown external
-      // symbols. If we really cared about making external stuff work
-      // better we could support user definition, or use the EXE style
-      // hack where we check the object file information.
-
-      LLVM_TYPE_Q Type *ty = i->getType()->getElementType();
-      uint64_t size = kmodule->targetData->getTypeStoreSize(ty);
-
-      // XXX - DWD - hardcode some things until we decide how to fix.
+    klee_warning("for loop %s",i->getName());
+	if (i->isDeclaration()) {
+		// FIXME: We have no general way of handling unknown external
+		// symbols. If we really cared about making external stuff work
+		// better we could support user definition, or use the EXE style
+		// hack where we check the object file information.
+		klee_warning("is declaration");
+		LLVM_TYPE_Q Type *ty = i->getType()->getElementType();
+		klee_warning("is declaration type");
+		uint64_t size;
+		if (i->getName() == "_DYNAMIC")
+		  size=28;
+		else
+		  size = kmodule->targetData->getTypeStoreSize(ty);
+	  klee_warning("is declaration size");
+	  // XXX - DWD - hardcode some things until we decide how to fix.
 #ifndef WINDOWS
       if (i->getName() == "_ZTVN10__cxxabiv117__class_type_infoE") {
         size = 0x2C;
@@ -597,46 +604,56 @@ void Executor::initializeGlobals(ExecutionState &state) {
 		else{
         for (unsigned offset=0; offset<mo->size; offset++)
           os->write8(offset, ((unsigned char*)addr)[offset]);
-	//	klee_warning("ok load symbol(%s) at address{%s}",i->getName().data(),addr);
+		klee_warning("ok load symbol(%s) at address{%s}",i->getName().data(),addr);
 		}
 	  }
-    } else {
-      LLVM_TYPE_Q Type *ty = i->getType()->getElementType();
-      uint64_t size = kmodule->targetData->getTypeStoreSize(ty);
-      MemoryObject *mo = memory->allocate(size, false, true, &*i);
-      if (!mo)
-        llvm::report_fatal_error("out of memory");
-      ObjectState *os = bindObjectInState(state, mo, false);
-      globalObjects.insert(std::make_pair(i, mo));
-      globalAddresses.insert(std::make_pair(i, mo->getBaseExpr()));
+	} else {
+		klee_warning("else load symbol(%s) at address{%s}",i->getName().data(),addr);
 
-      if (!i->hasInitializer())
-          os->initializeToRandom();
-    }
+		LLVM_TYPE_Q Type *ty = i->getType()->getElementType();
+		
+		klee_warning("after get1 load symbol(%s) at address{%s}",i->getName().data(),addr);
+		uint64_t size = kmodule->targetData->getTypeStoreSize(ty);
+		klee_warning("after get load symbol(%s) at address{%s}",i->getName().data(),addr);
+		MemoryObject *mo = memory->allocate(size, false, true, &*i);
+		if (!mo)
+		  llvm::report_fatal_error("out of memory");
+		ObjectState *os = bindObjectInState(state, mo, false);
+		globalObjects.insert(std::make_pair(i, mo));
+		globalAddresses.insert(std::make_pair(i, mo->getBaseExpr()));
+
+		if (!i->hasInitializer())
+		  os->initializeToRandom();
+		klee_warning("after initi0");
+	}
   }
-  
+ klee_warning("after init");
   // link aliases to their definitions (if bound)
   for (Module::alias_iterator i = m->alias_begin(), ie = m->alias_end(); 
-       i != ie; ++i) {
-    // Map the alias to its aliasee's address. This works because we have
-    // addresses for everything, even undefined functions. 
-    globalAddresses.insert(std::make_pair(i, evalConstant(i->getAliasee())));
+			  i != ie; ++i) {
+	  // Map the alias to its aliasee's address. This works because we have
+	  // addresses for everything, even undefined functions. 
+	  klee_warning("insert %s",i->getName().data());
+		  globalAddresses.insert(std::make_pair(i, evalConstant(i->getAliasee())));
   }
 
+	  klee_warning("after insert");
   // once all objects are allocated, do the actual initialization
   for (Module::const_global_iterator i = m->global_begin(),
-         e = m->global_end();
-       i != e; ++i) {
-    if (i->hasInitializer()) {
-      MemoryObject *mo = globalObjects.find(i)->second;
-      const ObjectState *os = state.addressSpace.findObject(mo);
-      assert(os);
-	  ObjectState *wos = state.addressSpace.getWriteable(mo, os);
-if(strcmp(i->getName().data(),"__sk_run_filter.jumptable"))
-	initializeGlobalObject(state, wos, i->getInitializer(), 0);
-	  // if(i->isConstant()) os->setReadOnly(true);
-    }
+			  e = m->global_end();
+			  i != e; ++i) {
+	  klee_warning("for get load symbol(%s) at address{%s}",i->getName().data(),addr);
+	  if (i->hasInitializer()) {
+		  MemoryObject *mo = globalObjects.find(i)->second;
+		  const ObjectState *os = state.addressSpace.findObject(mo);
+		  assert(os);
+		  ObjectState *wos = state.addressSpace.getWriteable(mo, os);
+		  if(strcmp(i->getName().data(),"__bpf_prog_run.jumptable")&&strcmp(i->getName().data(),"__sk_run_filter.jumptable"))
+			initializeGlobalObject(state, wos, i->getInitializer(), 0);
+		  // if(i->isConstant()) os->setReadOnly(true);
+	  }
   }
+  klee_warning("end one symbol");
 }
 
 void Executor::branch(ExecutionState &state, 
@@ -989,22 +1006,30 @@ void Executor::addConstraint(ExecutionState &state, ref<Expr> condition) {
 
 ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
   if (const llvm::ConstantExpr *ce = dyn_cast<llvm::ConstantExpr>(c)) {
-    return evalConstantExpr(ce);
+	  klee_warning("ConstantExpr");
+	  return evalConstantExpr(ce);
   } else {
-    if (const ConstantInt *ci = dyn_cast<ConstantInt>(c)) {
-      return ConstantExpr::alloc(ci->getValue());
-    } else if (const ConstantFP *cf = dyn_cast<ConstantFP>(c)) {      
-      return ConstantExpr::alloc(cf->getValueAPF().bitcastToAPInt());
-    } else if (const GlobalValue *gv = dyn_cast<GlobalValue>(c)) {
-      return globalAddresses.find(gv)->second;
-    } else if (isa<ConstantPointerNull>(c)) {
-      return Expr::createPointer(0);
+	  klee_warning("ConstantExpr else");
+	  if (const ConstantInt *ci = dyn_cast<ConstantInt>(c)) {
+		 klee_warning("ConstantInt");
+		  return ConstantExpr::alloc(ci->getValue());
+	  } else if (const ConstantFP *cf = dyn_cast<ConstantFP>(c)) {      
+		  klee_warning("ConstantFP");
+			  return ConstantExpr::alloc(cf->getValueAPF().bitcastToAPInt());
+	  } else if (const GlobalValue *gv = dyn_cast<GlobalValue>(c)) {
+		 klee_warning("GlobalValue");
+		  return globalAddresses.find(gv)->second;
+	  } else if (isa<ConstantPointerNull>(c)) {
+      klee_warning("isa<ConstantPointerNull>");
+		  return Expr::createPointer(0);
     } else if (isa<UndefValue>(c) || isa<ConstantAggregateZero>(c)) {
-      return ConstantExpr::create(0, getWidthForLLVMType(c->getType()));
+      klee_warning("isa<UndefValue>");
+		return ConstantExpr::create(0, getWidthForLLVMType(c->getType()));
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 1)
     } else if (const ConstantDataSequential *cds =
                  dyn_cast<ConstantDataSequential>(c)) {
-      std::vector<ref<Expr> > kids;
+     klee_warning("ConstantDataSequential");
+		std::vector<ref<Expr> > kids;
       for (unsigned i = 0, e = cds->getNumElements(); i != e; ++i) {
         ref<Expr> kid = evalConstant(cds->getElementAsConstant(i));
         kids.push_back(kid);
@@ -1013,7 +1038,8 @@ ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
       return cast<ConstantExpr>(res);
 #endif
     } else if (const ConstantStruct *cs = dyn_cast<ConstantStruct>(c)) {
-      const StructLayout *sl = kmodule->targetData->getStructLayout(cs->getType());
+      klee_warning("ConstantStruct");
+		  const StructLayout *sl = kmodule->targetData->getStructLayout(cs->getType());
       llvm::SmallVector<ref<Expr>, 4> kids;
       for (unsigned i = cs->getNumOperands(); i != 0; --i) {
         unsigned op = i-1;
@@ -1033,7 +1059,8 @@ ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
       ref<Expr> res = ConcatExpr::createN(kids.size(), kids.data());
       return cast<ConstantExpr>(res);
     } else if (const ConstantArray *ca = dyn_cast<ConstantArray>(c)){
-      llvm::SmallVector<ref<Expr>, 4> kids;
+      klee_warning("ConstantArray");
+		llvm::SmallVector<ref<Expr>, 4> kids;
       for (unsigned i = ca->getNumOperands(); i != 0; --i) {
         unsigned op = i-1;
         ref<Expr> kid = evalConstant(ca->getOperand(op));
@@ -1041,8 +1068,15 @@ ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
       }
       ref<Expr> res = ConcatExpr::createN(kids.size(), kids.data());
       return cast<ConstantExpr>(res);
-    } else {
-      // Constant{Vector}
+    }else if(const BlockAddress * ba= dyn_cast<BlockAddress>(c)){
+		klee_warning("Blockaddress");
+		return ConstantExpr::create(0, getWidthForLLVMType(c->getType()));
+	}else if(const ConstantVector *cv = dyn_cast<ConstantVector>(c)){
+		klee_warning("constVEctor");
+		return ConstantExpr::create(0, getWidthForLLVMType(c->getType()));
+	} else {
+		klee_warning("unknowned");
+		// Constant{Vector}
       //`llvm::report_fatal_error("invalid argument to evalConstant()");
     }
   }
@@ -1305,6 +1339,7 @@ void Executor::executeCall(ExecutionState &state,
         klee_warning_once(f, "calling %s with extra arguments.", 
                           f->getName().data());
       } else if (callingArgs < funcArgs) {
+		  klee_warning("%d, %d",callingArgs,funcArgs);
         terminateStateOnError(state, "calling function with too few arguments", 
                               "user.err");
         return;
@@ -1677,20 +1712,51 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     CallSite cs(i);
 
     unsigned numArgs = cs.arg_size();
-    Value *fp = cs.getCalledValue();
-    Function *f = getTargetFunction(fp, state);
+	Value *fp = cs.getCalledValue();
+	Function *f = getTargetFunction(fp, state);
 
-    // Skip debug intrinsics, we can't evaluate their metadata arguments.
-    if (f && isDebugIntrinsic(f, kmodule))
-      break;
+	// Skip debug intrinsics, we can't evaluate their metadata arguments.
+	if (f && isDebugIntrinsic(f, kmodule))
+	  break;
 
-    if (isa<InlineAsm>(fp)) {
-      terminateStateOnExecError(state, "inline assembly is unsupported");
-      break;
-    }
-    // evaluate arguments
-    std::vector< ref<Expr> > arguments;
-    arguments.reserve(numArgs);
+	if (isa<InlineAsm>(fp)) {
+
+
+		InlineAsm* fpAsm = dyn_cast<InlineAsm>(fp);
+		klee_warning("symbolic asm in %s,%s,%s",i->getName().str().c_str(),i->getParent()->getName().str().c_str(),i->getParent()->getParent()->getName().str().c_str());
+		const llvm::Type* fpAsmRetType =
+			fpAsm->getFunctionType()->getReturnType();
+
+		// if the inline assembly returns an aggregate type (components
+		//         // must be extracted later with 'getresult' instruction), don't
+		//                 // do anything yet, and handle later when handling getresult
+		//                         // instruction - this is only for primitive returned types
+		//                                 //
+		//                                         // (also don't do anything if it returns a void type, obviously)
+		if ((fpAsmRetType->getTypeID() != llvm::Type::VoidTyID) &&
+					(fpAsmRetType->getTypeID() != llvm::Type::StructTyID)) {
+			//                                                                       // allocate an MO of the same size as the returned value:
+			Expr::Width width_in_bits =
+				getWidthForLLVMType(fpAsm->getFunctionType()->getReturnType());
+			uint64_t width_in_bytes = width_in_bits / 8;
+			//                                                                                                     // allocate a new block of memory
+			MemoryObject *mo = memory->allocate(width_in_bytes, false, false, 0);
+			//                                                                                                                         // make it symbolic	
+			executeMakeSymbolic(state, mo,"inline");
+			//                                                                                                                                             // bind it in your current state's address space
+			const ObjectState* os = state.addressSpace.findObject(mo);
+			//                                                                                                                                                                 // do a READ from it
+			ref<Expr> ucRead = os->read(0, width_in_bits);
+			// bind that READ as the result
+			bindLocal(ki, state, ucRead);
+		}
+
+		terminateStateOnExecError(state, "inline assembly is unsupported");
+		break;
+	}
+	// evaluate arguments
+	std::vector< ref<Expr> > arguments;
+	arguments.reserve(numArgs);
 
     for (unsigned j=0; j<numArgs; ++j)
       arguments.push_back(eval(ki, j+1, state).value);
@@ -2537,12 +2603,16 @@ void Executor::bindModuleConstants() {
     for (unsigned i=0; i<kf->numInstructions; ++i)
       bindInstructionConstants(kf->instructions[i]);
   }
-
+klee_warning("end bindInstructionConstants");
   kmodule->constantTable = new Cell[kmodule->constants.size()];
+ klee_warning("new cell %d",kmodule->constants.size());
   for (unsigned i=0; i<kmodule->constants.size(); ++i) {
     Cell &c = kmodule->constantTable[i];
+	
+	klee_warning("%d, %lx",i,&kmodule->constantTable[i]);
     c.value = evalConstant(kmodule->constants[i]);
   }
+  klee_warning("end evalConstant");
 }
 
 void Executor::checkMemoryUsage() {
@@ -2579,8 +2649,10 @@ void Executor::checkMemoryUsage() {
 }
 
 void Executor::run(ExecutionState &initialState) {
-  bindModuleConstants();
-
+  
+klee_warning("start bind constant");
+	bindModuleConstants();
+klee_warning("end bind constant");
   // Delay init till now so that ticks don't accrue during
   // optimization and such.
   initTimers();
@@ -3465,6 +3537,7 @@ void Executor::runFunctionAsMain(Function *f,
 
   processTree = new PTree(state);
   state->ptreeNode = processTree->root;
+  klee_warning("run");
   run(*state);
   delete processTree;
   processTree = 0;

@@ -106,16 +106,16 @@ private:
 void printType(SymbolType type,PrintContext* PC){
   switch(type){
 			  case TYPE_NATIVE:
-				  *PC<<"others";
+				  *PC<<" others";
 				  break;
 			  case TYPE_SECRET:
-				  *PC<<"secret";
+				  *PC<<" secret";
 				  break;
 			  case TYPE_ATTACKER_O:
-				  *PC<<"attacker observable";
+				  *PC<<" attacker observable";
 				  break;
 			  case TYPE_ATTACKER_C:
-				  *PC<<"attacker controlled";
+				  *PC<<" attacker controlled";
 				  break;
 		  }
 }
@@ -583,13 +583,13 @@ void ExprPPrinter::printAnalyzedQuery(llvm::raw_ostream &os,
 			  case TYPE_NATIVE:
 				  break;
 			  case TYPE_SECRET:
-				  PC<<"secret";
+				  PC<<" secret";
 				  break;
 			  case TYPE_ATTACKER_O:
-				  PC<<"attacker observable";
+				  PC<<" attacker observable";
 				  break;
 			  case TYPE_ATTACKER_C:
-				  PC<<"attacker controlled";
+				  PC<<" attacker controlled";
 				  break;
 		  }
         PC << "symbolic";

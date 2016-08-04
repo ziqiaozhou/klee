@@ -19,7 +19,7 @@
 #include "klee/Internal/Module/KModule.h"
 
 #include "klee/util/GetElementPtrTypeIterator.h"
-
+#include "klee/Internal/Support/ErrorHandling.h"
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Constants.h"
@@ -46,15 +46,18 @@ using namespace llvm;
 namespace klee {
 
   ref<ConstantExpr> Executor::evalConstantExpr(const llvm::ConstantExpr *ce) {
-    LLVM_TYPE_Q llvm::Type *type = ce->getType();
+    klee_warning("type");
+	  LLVM_TYPE_Q llvm::Type *type = ce->getType();
 
+    klee_warning("type got");
     ref<ConstantExpr> op1(0), op2(0), op3(0);
     int numOperands = ce->getNumOperands();
-
+klee_warning("num op=%d",numOperands);
+klee_warning("%lx",(void *)ce->getOperand(0));
     if (numOperands > 0) op1 = evalConstant(ce->getOperand(0));
     if (numOperands > 1) op2 = evalConstant(ce->getOperand(1));
     if (numOperands > 2) op3 = evalConstant(ce->getOperand(2));
-
+klee_warning("switch before");
     switch (ce->getOpcode()) {
     default :
       ce->dump();
