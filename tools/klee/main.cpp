@@ -114,7 +114,7 @@ cl::opt<bool>
             cl::desc("Write .apc files for each test case"));
 cl::opt<bool>
   WriteObservable("write-obs",
-            cl::desc("Write .ob files for each test case"));
+            cl::desc("Write .ob files for each test case"),cl::init(true));
 
   cl::opt<bool>
   WriteSMT2s("write-smt2s",
