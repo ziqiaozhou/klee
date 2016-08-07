@@ -735,7 +735,7 @@ void SpecialFunctionHandler::handleMakeObservable(ExecutionState &state,
  std::string name=readStringAtAddress(state,arguments[0]);
 state.pushOb(name,arguments[1]);
 //llvm::raw_ostream *f = executor.interpreterHandler->openTestFile("ob", executor.interpreterHandler->getNumTestCases());
-klee_warning("observable=%d",state.observables.size());
+//klee_warning("observable=%d",state.observables.size());
 //*f<<name<<" :"<<arguments[1]<<"\n";
 //delete f;
 }
