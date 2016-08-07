@@ -104,7 +104,7 @@ private:
     }
   }
 void printType(SymbolType type,PrintContext* PC){
-  switch(type){
+  /*switch(type){
 			  case TYPE_NATIVE:
 				  *PC<<" others";
 				  break;
@@ -117,7 +117,7 @@ void printType(SymbolType type,PrintContext* PC){
 			  case TYPE_ATTACKER_C:
 				  *PC<<" attacker controlled";
 				  break;
-		  }
+		  }*/
 }
   void scan1(const ref<Expr> &e) {
     if (!isa<ConstantExpr>(e)) {
@@ -579,7 +579,7 @@ void ExprPPrinter::printAnalyzedQuery(llvm::raw_ostream &os,
       PC << "array " << A->name << "[" << A->size << "]"
          << " : w" << A->domain << " -> w" << A->range << " = ";
       if (A->isSymbolicArray()) {
-		  switch(A->type){
+	/*	  switch(A->type){
 			  case TYPE_NATIVE:
 				  break;
 			  case TYPE_SECRET:
@@ -592,7 +592,7 @@ void ExprPPrinter::printAnalyzedQuery(llvm::raw_ostream &os,
 				  PC<<" attacker controlled";
 				  break;
 		  }
-        PC << "symbolic";
+     */   PC << "symbolic";
       } else {
         PC << "[";
         for (unsigned i = 0, e = A->size; i != e; ++i) {

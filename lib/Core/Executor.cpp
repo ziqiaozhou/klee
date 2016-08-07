@@ -1723,7 +1723,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
 
 
 		InlineAsm* fpAsm = dyn_cast<InlineAsm>(fp);
-		klee_warning("symbolic asm in %s,%s,%s",i->getName().str().c_str(),i->getParent()->getName().str().c_str(),i->getParent()->getParent()->getName().str().c_str());
+		klee_warning("symbolic asm %s in %s,%s,%s",fpAsm->getAsmString().c_str(),i->getName().str().c_str(),i->getParent()->getName().str().c_str(),i->getParent()->getParent()->getName().str().c_str());
 		const llvm::Type* fpAsmRetType =
 			fpAsm->getFunctionType()->getReturnType();
 
@@ -3750,7 +3750,6 @@ Expr::Width Executor::getWidthForLLVMType(LLVM_TYPE_Q llvm::Type *type) const {
 }
 
 ///
-
 Interpreter *Interpreter::create(const InterpreterOptions &opts,
                                  InterpreterHandler *ih) {
   return new Executor(opts, ih);

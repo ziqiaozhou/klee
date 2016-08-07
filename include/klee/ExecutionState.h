@@ -18,10 +18,13 @@
 #include "../../lib/Core/AddressSpace.h"
 #include "klee/Internal/Module/KInstIterator.h"
 
+#include "llvm/IR/Type.h"
 #include <map>
 #include <set>
 #include <vector>
-
+#include <tuple>
+#include <functional>
+#include<iostream>
 namespace klee {
 class Array;
 class CallPathNode;
@@ -75,6 +78,7 @@ private:
 public:
   // Execution - Control Flow specific
 
+  std::vector<std::tuple<std::string,ref<Expr>>> observables;
   /// @brief Pointer to instruction to be executed after the current
   /// instruction
   KInstIterator pc;
@@ -163,7 +167,11 @@ public:
 
   void pushFrame(KInstIterator caller, KFunction *kf);
   void popFrame();
-
+  void pushOb(std::string name,ref<Expr>expr){
+	  observables.push_back(std::make_tuple(name,expr));
+	  std::cout<<"new observable"<<std::endl;
+  }
+ 
   void addSymbolic(const MemoryObject *mo, const Array *array);
   void addConstraint(ref<Expr> e) { constraints.addConstraint(e); }
 

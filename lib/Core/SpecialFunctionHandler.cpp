@@ -101,7 +101,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("klee_make_attackerO", handleMakeAttackerO, false),
   add("klee_make_attackerC", handleMakeAttackerC, false),
   add("klee_make_secret", handleMakeSecret, false),
-  
+ add("klee_make_observable",handleMakeObservable,false), 
   add("klee_mark_global", handleMarkGlobal, false),
   add("klee_merge", handleMerge, false),
   add("klee_prefer_cex", handlePreferCex, false),
@@ -459,6 +459,7 @@ void SpecialFunctionHandler::handlePrintExpr(ExecutionState &state,
 
   std::string msg_str = readStringAtAddress(state, arguments[0]);
   llvm::errs() << msg_str << ":" << arguments[1] << "\n";
+  //executor.printObservable(msg_str,arguments[1]);
 }
 
 void SpecialFunctionHandler::handleSetForking(ExecutionState &state,
@@ -726,7 +727,18 @@ void  SpecialFunctionHandler::handleMakeSecret(ExecutionState &state,
                                                 std::vector<ref<Expr> > &arguments) {
 	handleMakeType(TYPE_SECRET,state,target,arguments);
 }
-
+void SpecialFunctionHandler::handleMakeObservable(ExecutionState &state,
+                                                KInstruction *target,
+                                                std::vector<ref<Expr> > &arguments) {
+ assert(arguments.size()==2 &&
+           "invalid number of arguments to klee_make_observable");
+ std::string name=readStringAtAddress(state,arguments[0]);
+state.pushOb(name,arguments[1]);
+//llvm::raw_ostream *f = executor.interpreterHandler->openTestFile("ob", executor.interpreterHandler->getNumTestCases());
+klee_warning("observable=%d",state.observables.size());
+//*f<<name<<" :"<<arguments[1]<<"\n";
+//delete f;
+}
 void  SpecialFunctionHandler::handleMakeAttackerO(ExecutionState &state,
                                                 KInstruction *target,
                                                 std::vector<ref<Expr> > &arguments) {
