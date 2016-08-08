@@ -169,7 +169,6 @@ public:
   void popFrame();
   void pushOb(std::string name,ref<Expr>expr){
 	  observables.push_back(std::make_tuple(name,expr));
-	  std::cout<<"new observable"<<std::endl;
   }
  
   void addSymbolic(const MemoryObject *mo, const Array *array);
