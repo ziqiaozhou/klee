@@ -1,0 +1,6 @@
+offsets-of "struct tcp_sock"
+offsets-of "struct sk_buff"
+offsets-of "struct tcp_skb_cb"
+offsets-of "struct tcphdr"
+q
+

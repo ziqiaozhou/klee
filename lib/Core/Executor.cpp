@@ -1741,17 +1741,23 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
 			uint64_t width_in_bytes = width_in_bits / 8;
 			//                                                                                                     // allocate a new block of memory
 			MemoryObject *mo = memory->allocate(width_in_bytes, false, false, 0);
-			//                                                                                                                         // make it symbolic	
-			executeMakeSymbolic(state, mo,"inline");
+			// 
+			
+			executeMakeSymbolic(state, mo,fpAsm->getAsmString().c_str());
+
 			//                                                                                                                                             // bind it in your current state's address space
 			const ObjectState* os = state.addressSpace.findObject(mo);
 			//                                                                                                                                                                 // do a READ from it
 			ref<Expr> ucRead = os->read(0, width_in_bits);
 			// bind that READ as the result
 			bindLocal(ki, state, ucRead);
-		}
 
-		terminateStateOnExecError(state, "inline assembly is unsupported");
+		}
+		if(fpAsm->getAsmString().empty()){
+			break;
+		}
+klee_warning("symbolized a assembly %s",fpAsm->getAsmString().c_str());
+		//	terminateStateOnExecError(state, "inline assembly is unsupported");
 		break;
 	}
 	// evaluate arguments

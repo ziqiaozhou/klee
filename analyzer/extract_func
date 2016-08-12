@@ -1,0 +1,76 @@
+file=$1
+
+result=$(llvm-nm $file|grep -w "U");
+stop=0;
+size=1;
+all=""
+nameA=($(llvm-nm $file));
+size=${#nameA[@]};
+for i in `seq 1 $((size/2))`
+do
+index=$((i*2-1));
+index0=$((i*2-2))
+type=${nameA[$index0]};
+name=${nameA[$index]};
+if [ $type = 't' ] || [ $type = 'T' ] || [ $type = 'W' ] || [ $type = 'w' ]
+then all+=' --func '$name;
+elif [ "$type" = "D" ] || [ "$type" = "d" ]
+then all+=' --glob '$name;
+fi
+done;
+echo $all
+echo "start"
+
+while [ $size ] && [ $stop -eq 0 ];
+do
+nameA=($(llvm-nm $file|grep -w "U"));
+size=${#nameA[@]};
+for i in `seq 1 $((size/2))`
+do
+index=$((i*2-1));
+name=${nameA[$index]};
+echo $name;
+array=($(llvm-nm linux.bc|grep -w "$name")); 
+narray=${#array[@]};
+if [ narray > 0 ]
+then
+type=${array[0]};
+if [ $type = 't' ] || [ $type = 'T' ] || [ $type = 'W' ]
+then all+=' --func '$name;
+elif [ "$type" = "D" ] || [ "$type" = "d" ]  
+then all+=' --glob '$name;
+fi;
+fi
+done;
+if [ $all = "" ]
+then
+stop=1;
+echo "stop"
+else
+echo "extract"
+
+str="llvm-extract "$all" linux.bc -o $file";
+echo $str
+bash -c "$str";
+fi
+#result=($(llvm-nm $file|grep -w "U"));
+#size=${#result[@]};
+#undefined=0;
+#for i in `seq 1 $((size/2))`;
+#do
+#	index=$((i*2-1))
+#	one=${result[$index]};
+#	tmp=($(llvm-nm linux.bc|grep -w "$one"));
+#	type=${tmp[0]};
+#	if [ type = 'U' ]
+#	then undefined=$((undefined+1));
+#	fi;
+#done
+#if [ $undefined -eq $((size/2)) ]
+#then
+#stop=1;
+#echo "stop";
+#fi
+done
+
+
