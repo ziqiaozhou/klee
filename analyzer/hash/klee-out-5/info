@@ -1,3 +1,0 @@
-klee -write-pcs -only-output-states-covering-new hash.bc
-PID: 10831
-Started: 2016-08-18 10:28:57

@@ -1,3 +1,0 @@
-klee -write-pcs hash.bc
-PID: 5198
-Started: 2016-08-18 10:12:50

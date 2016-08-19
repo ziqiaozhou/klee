@@ -1,6 +1,0 @@
-Error: wrong size given to klee_make_symbolic[_name]
-File: /playpen/ziqiao/2project/klee/analyzer/hash/hash.c
-Line: 72
-assembly.ll line: 334
-Stack: 
-	#000000334 in main (argc=1, argv=41590656) at /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:72
