@@ -50,6 +50,7 @@ namespace llvm {
   class Value;
 }
 
+
 namespace klee {  
   class Array;
   struct Cell;
@@ -361,7 +362,7 @@ private:
   // internal and returns its InstructionInfo
   const InstructionInfo & getLastNonKleeInternalInstruction(const ExecutionState &state,
       llvm::Instruction** lastInstruction);
-
+  std::string getCurrentLine(ExecutionState * state);
   // remove state from queue and delete
   void terminateState(ExecutionState &state);
   // call exit handler and terminate state
@@ -430,7 +431,6 @@ public:
   virtual void setSymbolicPathWriter(TreeStreamWriter *tsw) {
     symPathWriter = tsw;
   }
-
   virtual void setReplayKTest(const struct KTest *out) {
     assert(!replayPath && "cannot replay both buffer and path");
     replayKTest = out;

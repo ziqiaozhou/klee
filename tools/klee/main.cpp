@@ -526,7 +526,7 @@ if(WriteAnalyzedPCs){
                                   symbolicBranches);
       llvm::raw_fd_ostream *f = openTestFile("sym.path", id);
       for (std::vector<unsigned char>::iterator I = symbolicBranches.begin(), E = symbolicBranches.end(); I!=E; ++I) {
-        *f << *I << "\n";
+        *f << *I ;
       }
       delete f;
     }
