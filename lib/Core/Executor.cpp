@@ -24,7 +24,7 @@
 #include "ExecutorTimerInfo.h"
 #include<stdio.h>
 #include<iostream>
-
+#include <string>
 #include "klee/ExecutionState.h"
 #include "klee/Expr.h"
 #include "klee/Interpreter.h"
@@ -741,6 +741,39 @@ void Executor::branch(ExecutionState &state,
     if (result[i])
       addConstraint(*result[i], conditions[i]);
 }
+std::string GotoLine(std::fstream& file, unsigned int num){
+	std::string line;
+	for(int nline=0;nline<num;nline++){
+		getline(file,line);
+	}
+	return line;
+}
+bool replace(std::string& str, const std::string& from, const std::string& to) {
+	    size_t start_pos = str.find(from);
+		    if(start_pos == std::string::npos)
+			          return false;
+			str.replace(start_pos, from.length(), to);
+			return true;
+}
+std::string Executor::getCurrentLine(ExecutionState * state){
+	std::stringstream msg;
+	Instruction * lastInst;
+	const InstructionInfo &ii = getLastNonKleeInternalInstruction(*state, &lastInst);
+	if (ii.file != ""){
+		std::string filename=ii.file;
+		replace(filename,"/home/ziqiao","/playpen/ziqiao");
+		std::fstream file(filename);
+		std::string linestr=GotoLine(file,ii.line);
+		if (filename.find("/playpen/ziqiao/2project/klee/examples/linux-3.18.37")>-1){
+			msg<<"("<<linestr<<")\t"<<filename.substr(strlen("/playpen/ziqiao/2project/klee/examples/linux-3.18.37"),filename.length())<<":"<<ii.line;
+		}else{
+			msg<<"("<<linestr<<")\t"<<filename<<":"<<ii.line;
+		}
+
+		file.close();
+	}
+	return msg.str();
+}
 
 Executor::StatePair 
 Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
@@ -951,8 +984,8 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
       }      
       if (symPathWriter) {
         falseState->symPathOS = symPathWriter->open(current.symPathOS);
-        trueState->symPathOS << "1";
-        falseState->symPathOS << "0";
+        trueState->symPathOS << "1"<<getCurrentLine(falseState)<<"\n";
+        falseState->symPathOS << "0"<<getCurrentLine(trueState)<<"\n";
       }
     }
 

@@ -113,7 +113,6 @@ ExecutionState::ExecutionState(const ExecutionState& state):
 
     pathOS(state.pathOS),
     symPathOS(state.symPathOS),
-
     instsSinceCovNew(state.instsSinceCovNew),
     coveredNew(state.coveredNew),
     forkDisabled(state.forkDisabled),

@@ -1,0 +1,28 @@
+0	callback_head.next	u8
+64	callback_head.func	u8
+128	child	u8
+192	dev	u8
+256	ops	u8
+320	_metrics	long unsigned int
+384	expires	long unsigned int
+448	path	u8
+512	from	u8
+576	xfrm	u8
+640	input	u8
+704	output	u8
+768	flags	unsigned short
+784	pending_confirm	unsigned short
+800	error	short
+816	obsolete	short
+832	header_len	unsigned short
+848	trailer_len	unsigned short
+864	__pad2	unsigned int
+896	__pad_to_align_refcnt[0]	long int
+960	__pad_to_align_refcnt[1]	long int
+1024	__refcnt.counter	int
+1056	__use	int
+1088	lastuse	long unsigned int
+1152	next	u8
+1152	rt_next	u8
+1152	rt6_next	u8
+1152	dn_next	u8

@@ -1,0 +1,196 @@
+0	bydst.next	u8
+64	bydst.pprev	u8
+128	byidx.next	u8
+192	byidx.pprev	u8
+256	refcnt.counter	int
+320	timer.entry.next	u8
+384	timer.entry.prev	u8
+448	timer.expires	long unsigned int
+512	timer.base	u8
+576	timer.function	u8
+640	timer.data	long unsigned int
+704	timer.slack	int
+768	flo.ops	u8
+832	genid.counter	int
+864	priority	unsigned int
+896	index	unsigned int
+928	mark.v	unsigned int
+960	mark.m	unsigned int
+992	selector.daddr.a4	unsigned int
+992	selector.daddr.a6[0]	unsigned int
+1024	selector.daddr.a6[1]	unsigned int
+1056	selector.daddr.a6[2]	unsigned int
+1088	selector.daddr.a6[3]	unsigned int
+1120	selector.saddr.a4	unsigned int
+1120	selector.saddr.a6[0]	unsigned int
+1152	selector.saddr.a6[1]	unsigned int
+1184	selector.saddr.a6[2]	unsigned int
+1216	selector.saddr.a6[3]	unsigned int
+1248	selector.dport	unsigned short
+1264	selector.dport_mask	unsigned short
+1280	selector.sport	unsigned short
+1296	selector.sport_mask	unsigned short
+1312	selector.family	unsigned short
+1328	selector.prefixlen_d	unsigned char
+1336	selector.prefixlen_s	unsigned char
+1344	selector.proto	unsigned char
+1376	selector.ifindex	int
+1408	selector.user	unsigned int
+1472	lft.soft_byte_limit	long long unsigned int
+1536	lft.hard_byte_limit	long long unsigned int
+1600	lft.soft_packet_limit	long long unsigned int
+1664	lft.hard_packet_limit	long long unsigned int
+1728	lft.soft_add_expires_seconds	long long unsigned int
+1792	lft.hard_add_expires_seconds	long long unsigned int
+1856	lft.soft_use_expires_seconds	long long unsigned int
+1920	lft.hard_use_expires_seconds	long long unsigned int
+1984	curlft.bytes	long long unsigned int
+2048	curlft.packets	long long unsigned int
+2112	curlft.add_time	long long unsigned int
+2176	curlft.use_time	long long unsigned int
+2240	walk.all.next	u8
+2304	walk.all.prev	u8
+2368	walk.dead	unsigned char
+2432	polq.hold_queue.next	u8
+2496	polq.hold_queue.prev	u8
+2560	polq.hold_queue.qlen	unsigned int
+2624	polq.hold_timer.entry.next	u8
+2688	polq.hold_timer.entry.prev	u8
+2752	polq.hold_timer.expires	long unsigned int
+2816	polq.hold_timer.base	u8
+2880	polq.hold_timer.function	u8
+2944	polq.hold_timer.data	long unsigned int
+3008	polq.hold_timer.slack	int
+3072	polq.timeout	long unsigned int
+3136	type	unsigned char
+3144	action	unsigned char
+3152	flags	unsigned char
+3160	xfrm_nr	unsigned char
+3168	family	unsigned short
+3200	security	u8
+3264	xfrm_vec[0].id.daddr.a4	unsigned int
+3264	xfrm_vec[0].id.daddr.a6[0]	unsigned int
+3296	xfrm_vec[0].id.daddr.a6[1]	unsigned int
+3328	xfrm_vec[0].id.daddr.a6[2]	unsigned int
+3360	xfrm_vec[0].id.daddr.a6[3]	unsigned int
+3392	xfrm_vec[0].id.spi	unsigned int
+3424	xfrm_vec[0].id.proto	unsigned char
+3456	xfrm_vec[0].saddr.a4	unsigned int
+3456	xfrm_vec[0].saddr.a6[0]	unsigned int
+3488	xfrm_vec[0].saddr.a6[1]	unsigned int
+3520	xfrm_vec[0].saddr.a6[2]	unsigned int
+3552	xfrm_vec[0].saddr.a6[3]	unsigned int
+3584	xfrm_vec[0].encap_family	unsigned short
+3616	xfrm_vec[0].reqid	unsigned int
+3648	xfrm_vec[0].mode	unsigned char
+3656	xfrm_vec[0].share	unsigned char
+3664	xfrm_vec[0].optional	unsigned char
+3672	xfrm_vec[0].allalgs	unsigned char
+3680	xfrm_vec[0].aalgos	unsigned int
+3712	xfrm_vec[0].ealgos	unsigned int
+3744	xfrm_vec[0].calgos	unsigned int
+3776	xfrm_vec[1].id.daddr.a4	unsigned int
+3776	xfrm_vec[1].id.daddr.a6[0]	unsigned int
+3808	xfrm_vec[1].id.daddr.a6[1]	unsigned int
+3840	xfrm_vec[1].id.daddr.a6[2]	unsigned int
+3872	xfrm_vec[1].id.daddr.a6[3]	unsigned int
+3904	xfrm_vec[1].id.spi	unsigned int
+3936	xfrm_vec[1].id.proto	unsigned char
+3968	xfrm_vec[1].saddr.a4	unsigned int
+3968	xfrm_vec[1].saddr.a6[0]	unsigned int
+4000	xfrm_vec[1].saddr.a6[1]	unsigned int
+4032	xfrm_vec[1].saddr.a6[2]	unsigned int
+4064	xfrm_vec[1].saddr.a6[3]	unsigned int
+4096	xfrm_vec[1].encap_family	unsigned short
+4128	xfrm_vec[1].reqid	unsigned int
+4160	xfrm_vec[1].mode	unsigned char
+4168	xfrm_vec[1].share	unsigned char
+4176	xfrm_vec[1].optional	unsigned char
+4184	xfrm_vec[1].allalgs	unsigned char
+4192	xfrm_vec[1].aalgos	unsigned int
+4224	xfrm_vec[1].ealgos	unsigned int
+4256	xfrm_vec[1].calgos	unsigned int
+4288	xfrm_vec[2].id.daddr.a4	unsigned int
+4288	xfrm_vec[2].id.daddr.a6[0]	unsigned int
+4320	xfrm_vec[2].id.daddr.a6[1]	unsigned int
+4352	xfrm_vec[2].id.daddr.a6[2]	unsigned int
+4384	xfrm_vec[2].id.daddr.a6[3]	unsigned int
+4416	xfrm_vec[2].id.spi	unsigned int
+4448	xfrm_vec[2].id.proto	unsigned char
+4480	xfrm_vec[2].saddr.a4	unsigned int
+4480	xfrm_vec[2].saddr.a6[0]	unsigned int
+4512	xfrm_vec[2].saddr.a6[1]	unsigned int
+4544	xfrm_vec[2].saddr.a6[2]	unsigned int
+4576	xfrm_vec[2].saddr.a6[3]	unsigned int
+4608	xfrm_vec[2].encap_family	unsigned short
+4640	xfrm_vec[2].reqid	unsigned int
+4672	xfrm_vec[2].mode	unsigned char
+4680	xfrm_vec[2].share	unsigned char
+4688	xfrm_vec[2].optional	unsigned char
+4696	xfrm_vec[2].allalgs	unsigned char
+4704	xfrm_vec[2].aalgos	unsigned int
+4736	xfrm_vec[2].ealgos	unsigned int
+4768	xfrm_vec[2].calgos	unsigned int
+4800	xfrm_vec[3].id.daddr.a4	unsigned int
+4800	xfrm_vec[3].id.daddr.a6[0]	unsigned int
+4832	xfrm_vec[3].id.daddr.a6[1]	unsigned int
+4864	xfrm_vec[3].id.daddr.a6[2]	unsigned int
+4896	xfrm_vec[3].id.daddr.a6[3]	unsigned int
+4928	xfrm_vec[3].id.spi	unsigned int
+4960	xfrm_vec[3].id.proto	unsigned char
+4992	xfrm_vec[3].saddr.a4	unsigned int
+4992	xfrm_vec[3].saddr.a6[0]	unsigned int
+5024	xfrm_vec[3].saddr.a6[1]	unsigned int
+5056	xfrm_vec[3].saddr.a6[2]	unsigned int
+5088	xfrm_vec[3].saddr.a6[3]	unsigned int
+5120	xfrm_vec[3].encap_family	unsigned short
+5152	xfrm_vec[3].reqid	unsigned int
+5184	xfrm_vec[3].mode	unsigned char
+5192	xfrm_vec[3].share	unsigned char
+5200	xfrm_vec[3].optional	unsigned char
+5208	xfrm_vec[3].allalgs	unsigned char
+5216	xfrm_vec[3].aalgos	unsigned int
+5248	xfrm_vec[3].ealgos	unsigned int
+5280	xfrm_vec[3].calgos	unsigned int
+5312	xfrm_vec[4].id.daddr.a4	unsigned int
+5312	xfrm_vec[4].id.daddr.a6[0]	unsigned int
+5344	xfrm_vec[4].id.daddr.a6[1]	unsigned int
+5376	xfrm_vec[4].id.daddr.a6[2]	unsigned int
+5408	xfrm_vec[4].id.daddr.a6[3]	unsigned int
+5440	xfrm_vec[4].id.spi	unsigned int
+5472	xfrm_vec[4].id.proto	unsigned char
+5504	xfrm_vec[4].saddr.a4	unsigned int
+5504	xfrm_vec[4].saddr.a6[0]	unsigned int
+5536	xfrm_vec[4].saddr.a6[1]	unsigned int
+5568	xfrm_vec[4].saddr.a6[2]	unsigned int
+5600	xfrm_vec[4].saddr.a6[3]	unsigned int
+5632	xfrm_vec[4].encap_family	unsigned short
+5664	xfrm_vec[4].reqid	unsigned int
+5696	xfrm_vec[4].mode	unsigned char
+5704	xfrm_vec[4].share	unsigned char
+5712	xfrm_vec[4].optional	unsigned char
+5720	xfrm_vec[4].allalgs	unsigned char
+5728	xfrm_vec[4].aalgos	unsigned int
+5760	xfrm_vec[4].ealgos	unsigned int
+5792	xfrm_vec[4].calgos	unsigned int
+5824	xfrm_vec[5].id.daddr.a4	unsigned int
+5824	xfrm_vec[5].id.daddr.a6[0]	unsigned int
+5856	xfrm_vec[5].id.daddr.a6[1]	unsigned int
+5888	xfrm_vec[5].id.daddr.a6[2]	unsigned int
+5920	xfrm_vec[5].id.daddr.a6[3]	unsigned int
+5952	xfrm_vec[5].id.spi	unsigned int
+5984	xfrm_vec[5].id.proto	unsigned char
+6016	xfrm_vec[5].saddr.a4	unsigned int
+6016	xfrm_vec[5].saddr.a6[0]	unsigned int
+6048	xfrm_vec[5].saddr.a6[1]	unsigned int
+6080	xfrm_vec[5].saddr.a6[2]	unsigned int
+6112	xfrm_vec[5].saddr.a6[3]	unsigned int
+6144	xfrm_vec[5].encap_family	unsigned short
+6176	xfrm_vec[5].reqid	unsigned int
+6208	xfrm_vec[5].mode	unsigned char
+6216	xfrm_vec[5].share	unsigned char
+6224	xfrm_vec[5].optional	unsigned char
+6232	xfrm_vec[5].allalgs	unsigned char
+6240	xfrm_vec[5].aalgos	unsigned int
+6272	xfrm_vec[5].ealgos	unsigned int
+6304	xfrm_vec[5].calgos	unsigned int

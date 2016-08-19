@@ -29,7 +29,7 @@ class offsets(gdb.Command):
                 offset=offset+(i)*arrayT.sizeof*8
                 self.printOneField(one,f,prev,offset)
         elif field.is_base_class==True:
-            print '    %s\t%d\t%s' % (field.name, base+field.bitpos,ftype.name)
+            #print '    %s\t%d\t%s' % (field.name, base+field.bitpos,ftype.name)
             if ftype.name:
                 tobewrite=str(field.bitpos+base)+"\t"+prev+field.name+"\t"+ftype.name+"\n"
             else:
@@ -46,7 +46,7 @@ class offsets(gdb.Command):
         stype=stype.strip_typedefs();
         for field in stype.fields():
             offset=base+field.bitpos
-            print '    %s\t%d\t%s\t%d' % (field.name,base+ field.bitpos//8, field.type.tag,field.type.code)
+            #print '    %s\t%d\t%s\t%d' % (field.name,base+ field.bitpos//8, field.type.tag,field.type.code)
             self.printOneField(field,f,prev,base);
         return 0
     def invoke(self, arg, from_tty):
@@ -57,9 +57,8 @@ class offsets(gdb.Command):
         str0=argv[0]
         words=str0.split();
         f = open(words[1]+".struct",'w')
-        print argv[0], '{'
+        #print argv[0], '{'
         self.printFields(f,stype,"",0)
-        print '}'
+        #print '}'
         f.close()
     
-offsets()

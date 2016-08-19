@@ -1,0 +1,21 @@
+klee -write-pcs -allow-external-sym-calls -write-cov hash.bc
+PID: 460
+Started: 2016-08-18 11:21:46
+BEGIN searcher description
+<InterleavedSearcher> containing 2 searchers:
+RandomPathSearcher
+WeightedRandomSearcher::CoveringNew
+</InterleavedSearcher>
+END searcher description
+Finished: 2016-08-18 11:21:46
+Elapsed: 00:00:00
+KLEE: done: explored paths = 1
+KLEE: done: avg. constructs per query = 183
+KLEE: done: total queries = 2
+KLEE: done: valid queries = 1
+KLEE: done: invalid queries = 1
+KLEE: done: query cex = 2
+
+KLEE: done: total instructions = 279112
+KLEE: done: completed paths = 1
+KLEE: done: generated tests = 1

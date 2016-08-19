@@ -1,0 +1,7 @@
+Error: external call with symbolic argument: printf
+File: /playpen/ziqiao/2project/klee/analyzer/hash/hash.c
+Line: 54
+assembly.ll line: 262
+Stack: 
+	#000000262 in hash (result0=18610752, key0=20111200, data0=18610736, n=4, m=1) at /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:54
+	#100000339 in main (argc=1, argv=19926400) at /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:75

@@ -1,0 +1,1 @@
+(0x2efe380,[('main',62), ], {'depth' : 0, 'weight' : 1.000000e+00, 'queryCost' : 0.000000e+00, 'coveredNew' : 1, 'instsSinceCovNew' : 1, 'md2u' : 0, 'icnt' : 0, 'CPicnt' : 1, })

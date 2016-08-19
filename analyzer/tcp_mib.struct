@@ -1,0 +1,16 @@
+0	mibs[0]	long unsigned int
+64	mibs[1]	long unsigned int
+128	mibs[2]	long unsigned int
+192	mibs[3]	long unsigned int
+256	mibs[4]	long unsigned int
+320	mibs[5]	long unsigned int
+384	mibs[6]	long unsigned int
+448	mibs[7]	long unsigned int
+512	mibs[8]	long unsigned int
+576	mibs[9]	long unsigned int
+640	mibs[10]	long unsigned int
+704	mibs[11]	long unsigned int
+768	mibs[12]	long unsigned int
+832	mibs[13]	long unsigned int
+896	mibs[14]	long unsigned int
+960	mibs[15]	long unsigned int

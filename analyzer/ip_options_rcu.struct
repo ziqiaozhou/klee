@@ -1,0 +1,17 @@
+0	rcu.next	u8
+64	rcu.func	u8
+128	opt.faddr	unsigned int
+160	opt.nexthop	unsigned int
+192	opt.optlen	unsigned char
+200	opt.srr	unsigned char
+208	opt.rr	unsigned char
+216	opt.ts	unsigned char
+224	opt.is_strictroute	unsigned char
+225	opt.srr_is_hit	unsigned char
+226	opt.is_changed	unsigned char
+227	opt.rr_needaddr	unsigned char
+228	opt.ts_needtime	unsigned char
+229	opt.ts_needaddr	unsigned char
+232	opt.router_alert	unsigned char
+240	opt.cipso	unsigned char
+248	opt.__pad2	unsigned char

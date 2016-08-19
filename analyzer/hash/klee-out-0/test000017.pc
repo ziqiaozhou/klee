@@ -1,0 +1,60 @@
+array a[96] : w32 -> w8 = symbolic
+array y[4] : w32 -> w8 = symbolic
+(query [(Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 (ZExt w32 (Read w8 0 a))
+                                                   N0:(ZExt w32 (Read w8 0 y)))))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N1:(ZExt w32 (Read w8 1 a))
+                                                   N2:(ZExt w32 (Read w8 1 y)))))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N3:(ZExt w32 (Read w8 2 a))
+                                                   N4:(ZExt w32 (Read w8 2 y)))))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N5:(ZExt w32 (Read w8 3 a))
+                                                   N6:(ZExt w32 (Read w8 3 y)))))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N1 N0)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N3 N2)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N5 N4)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N7:(ZExt w32 (Read w8 4 a))
+                                                   N6)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N3 N0)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N5 N2)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N7 N4)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N8:(ZExt w32 (Read w8 5 a))
+                                                   N6)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N5 N0)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N7 N2)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 N8 N4)))))
+         (Eq false
+             (Slt 0
+                  (ZExt w32 (Extract w8 0 (And w32 (ZExt w32 (Read w8 6 a))
+                                                   N6)))))
+         (Slt 0
+              (ZExt w32 (Extract w8 0 (And w32 N7 N0))))]
+        false)

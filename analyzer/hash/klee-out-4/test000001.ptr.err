@@ -1,0 +1,13 @@
+Error: memory error: out of bound pointer
+File: /playpen/ziqiao/2project/klee/runtime/Intrinsic/memcpy.c
+Line: 17
+assembly.ll line: 493
+Stack: 
+	#000000493 in memcpy (destaddr=37899136, srcaddr=36509184, len=8) at /playpen/ziqiao/2project/klee/runtime/Intrinsic/memcpy.c:17
+	#100000219 in main (argc=1, argv=38023104) at /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:37
+Info: 
+	address: 36509188
+	next: object at 36509200 of size 4
+		MO52[4] allocated at main():  %m = alloca i32, align 4
+	prev: object at 36509184 of size 4
+		MO54[4] allocated at main():  %x = alloca i32, align 4
