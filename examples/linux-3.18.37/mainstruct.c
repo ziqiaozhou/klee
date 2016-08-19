@@ -61,7 +61,7 @@
 #include <linux/uaccess.h>
 #include <asm/dma.h>
 #include <asm/div64.h>		/* do_div */
-
+#include <net/xfrm.h>
 #define MAX_BUF 128
 #define VERSION	"2.74"
 #define IP_NAME_SZ 32
@@ -121,7 +121,11 @@ extern void ip_fib_init(void);
 extern int fib_net_init(struct net *net);
 extern int printf( const char* format, ... );
 	extern void gettimeofday(struct timeval *tv,int);
-
+struct ip_ident_bucket {
+		 atomic_t        id;
+			  u32             stamp32;
+};
+	extern struct ip_ident_bucket *ip_idents;
 #define MAXPTR 100
 void * mallocptr[MAXPTR];
 int count=0;
@@ -1053,6 +1057,9 @@ void * malloc0(int size){
 	{
 		do{}while(0);
 	}
+void faked___queue_work(int cpu, struct workqueue_struct *wq,struct work_struct *work){
+	do{}while(0);
+}
 struct socket* faked_sock_alloc(void){
 	return (struct socket*)malloc(sizeof(struct socket));
 }
@@ -1070,9 +1077,11 @@ struct socket* faked_sock_alloc(void){
 	}
 	struct rtable *faked___ip_route_output_key(struct net *net,struct flowi4 *flp){
 		struct rtable* ip_route_output_key=malloc0(sizeof(struct rtable));
-		dst_init2(ip_route_output_key);
+
 		klee_make_symbolic(ip_route_output_key,sizeof(struct rtable),"ip_route_output_key");
-		return ip_route_output_key;
+		
+		dst_init2(ip_route_output_key);
+			return ip_route_output_key;
 	}
 	struct net_device *faked___ip_dev_find(struct net *net, __be32 addr, bool devref){
 		return dev;
@@ -1153,7 +1162,10 @@ struct socket* faked_sock_alloc(void){
 	void faked_local_bh_enable(void){
 		do{}while(0);
 	}
-	void faked_local_bh_disable(void){
+int faked_nl_fib_lookup_init(struct net *net){
+		return 0;
+}
+void faked_local_bh_disable(void){
 		do{}while(0);
 	}
 	struct thread_info * faked_current_thread_info(void){
@@ -1171,31 +1183,42 @@ struct socket* faked_sock_alloc(void){
 		.cong_avoid     = tcp_reno_cong_avoid,
 		.in_ack_event =NULL,
 	};
-	void faked_tcp_init_sock(struct sock *sk){
-		struct inet_connection_sock *icsk = inet_csk(sk);
-		struct tcp_sock *tp = tcp_sk(sk);
-		__skb_queue_head_init(&tp->out_of_order_queue);
-		tcp_init_xmit_timers(sk);
-		tcp_prequeue_init(tp);
-		INIT_LIST_HEAD(&tp->tsq_node);
-		//  icsk->icsk_rto = TCP_TIMEOUT_INIT;
-		icsk->icsk_sync_mss = tcp_sync_mss;
-		printf("init icsk");
-		icsk->icsk_ca_ops=&faked_tcp_reno;
-		tp->reordering = sysctl_tcp_reordering;
-		sk->sk_write_space = sk_stream_write_space;
-		sk->sk_sndbuf = sysctl_tcp_wmem[1];
-		sk->sk_rcvbuf = sysctl_tcp_rmem[1];
-	}
-	void  faked___kfree_skb(struct sk_buff *skb){
+void faked_tcp_init_sock(struct sock *sk){
+	struct inet_connection_sock *icsk = inet_csk(sk);
+	struct tcp_sock *tp = tcp_sk(sk);
+	__skb_queue_head_init(&tp->out_of_order_queue);
+	tcp_init_xmit_timers(sk);
+	tcp_prequeue_init(tp);
+	INIT_LIST_HEAD(&tp->tsq_node);
+	//  icsk->icsk_rto = TCP_TIMEOUT_INIT;
+	icsk->icsk_sync_mss = tcp_sync_mss;
+	printf("init icsk");
+	icsk->icsk_ca_ops=&faked_tcp_reno;
+	tp->reordering = sysctl_tcp_reordering;
+	sk->sk_write_space = sk_stream_write_space;
+	sk->sk_sndbuf = sysctl_tcp_wmem[1];
+	sk->sk_rcvbuf = sysctl_tcp_rmem[1];
+}
+void  faked___kfree_skb(struct sk_buff *skb){
 	//	free(skb);
-	}
-	struct tcp_out_options {
-		u16 options;		/* bit field of OPTION_* */
-		u16 mss;		/* 0 to disable */
-		u8 ws;			/* window scale, 0 to disable */
-		u8 num_sack_blocks;	/* number of SACK blocks to include */
-		u8 hash_size;		/* bytes in hash_location */
+}
+void faked_kfree(const void *block)
+{
+	free(block);
+}
+void *faked_rhashtable_lookup_compare(const struct rhashtable *ht, u32 hash,
+			bool (*compare)(void *, void *), void *arg){
+	return NULL;
+}
+int faked_register_pernet_subsys(struct pernet_operations *ops){
+	return 0;
+}
+struct tcp_out_options {
+	u16 options;		/* bit field of OPTION_* */
+	u16 mss;		/* 0 to disable */
+	u8 ws;			/* window scale, 0 to disable */
+	u8 num_sack_blocks;	/* number of SACK blocks to include */
+	u8 hash_size;		/* bytes in hash_location */
 		__u8 *hash_location;	/* temporary pointer, overloaded */
 		__u32 tsval, tsecr;	/* need to include OPTION_TS */
 		struct tcp_fastopen_cookie *fastopen_cookie;	/* Fast open cookie */
@@ -1301,66 +1324,78 @@ struct socket* faked_sock_alloc(void){
 		klee_alias_function("mutex_lock","faked_mutex_lock");
 		klee_alias_function("mutex_unlock","faked_mutex_unlock");
 		klee_alias_function("sock_alloc","faked_sock_alloc");
+		klee_alias_function("rhashtable_lookup_compare","faked_rhashtable_lookup_compare");
+		klee_alias_function("register_pernet_subsys","faked_register_pernet_subsys");
+		klee_alias_function("nl_fib_lookup_init","faked_nl_fib_lookup_init");
+		klee_alias_function("__queue_work","faked___queue_work");
+		klee_alias_function("kfree","faked_kfree");
 		cur=(struct thread_info *)malloc0(sizeof(struct thread_info));
 		struct task_struct  * task=(struct task_struct*)malloc0(sizeof( struct task_struct));
 		klee_make_symbolic(task,sizeof(struct task_struct),"curr_task");
 		klee_make_symbolic(cur,sizeof(struct thread_info),"thread_info");
 		cur->task=task;
-	 kmem_cache_init();
-	 fib_net_init(&init_net);
-	 ip_init();
-	 tcp_v4_init();
-	 tcp_init();
-
+		kmem_cache_init();
+		fib_net_init(&init_net);
+		ip_idents = malloc(2048u * sizeof(*ip_idents));
+		klee_make_symbolic(ip_idents,2048u * sizeof(*ip_idents),"ip_idents");
+		//ip_init();
+		//tcp_v4_init();
+		//tcp_init();
 	}
 
-	extern void sock_def_wakeup(struct sock *sk);
-	extern void sock_def_error_report(struct sock *sk);
-	extern void sock_def_readable(struct sock *sk);
-	extern void sock_def_write_space(struct sock *sk);
-	extern void sock_def_destruct(struct sock *sk);
-	extern struct ip_options_rcu *ip_options_get_alloc(const int optlen);		
-	void init_sock2(struct sock* sk){
-		struct socket* sock=malloc0(sizeof(struct socket));
-		klee_make_symbolic(sock,sizeof(struct socket),"socket");
-		sock->sk=sk;
-		sock->file=NULL;
-		sock->state=SS_CONNECTED;
-		sock->ops=&inet_stream_ops;
+extern void sock_def_wakeup(struct sock *sk);
+extern void sock_def_error_report(struct sock *sk);
+extern void sock_def_readable(struct sock *sk);
+extern void sock_def_write_space(struct sock *sk);
+extern void sock_def_destruct(struct sock *sk);
+extern struct ip_options_rcu *ip_options_get_alloc(const int optlen);		
+void init_sock2(struct sock* sk){
+	struct socket* sock=malloc0(sizeof(struct socket));
+	klee_make_symbolic(sock,sizeof(struct socket),"socket");
+	sock->sk=sk;
+	sock->file=NULL;
+	sock->state=SS_CONNECTED;
+	sock->ops=&inet_stream_ops;
 
-		sk->sk_socket=sock;
-		
-		skb_queue_head_init(&sk->sk_receive_queue);
-		 skb_queue_head_init(&sk->sk_write_queue);
-		 skb_queue_head_init(&sk->sk_error_queue);
-		 sk->sk_send_head        =       NULL;
-		   sk->sk_peer_pid         =       NULL;
+	sk->sk_socket=sock;
+
+	skb_queue_head_init(&sk->sk_receive_queue);
+	skb_queue_head_init(&sk->sk_write_queue);
+	skb_queue_head_init(&sk->sk_error_queue);
+	sk->sk_send_head        =       tcp_write_queue_head(sk);
+	sk->sk_peer_pid         =       NULL;
 	sk->sk_frag.page        =       NULL;
+	sk->sk_family=AF_INET;
 	sk->sk_peer_cred        =       NULL;
 	sk->sk_wq       =       NULL;
 	sk->sk_prot=&tcp_prot;
 	sk->sk_cgrp=NULL;
 	sk->sk_sndbuf           =       sysctl_wmem_default;
-	 sk->sk_rcvbuf           =       sysctl_rmem_default;
-	 spin_lock_init(&sk->sk_dst_lock);
-	 rwlock_init(&sk->sk_callback_lock);
-	 sk->sk_state_change     =       sock_def_wakeup;
-	 sk->sk_data_ready       =       sock_def_readable;
-	 sk->sk_write_space      =       sock_def_write_space;
-	 sk->sk_error_report     =       sock_def_error_report;
-	 sk->sk_destruct         =       sock_def_destruct;
+	sk->sk_rcvbuf           =       sysctl_rmem_default;
+	spin_lock_init(&sk->sk_dst_lock);
+	rwlock_init(&sk->sk_callback_lock);
+	sk->sk_state_change     =       sock_def_wakeup;
+	sk->sk_data_ready       =       sock_def_readable;
+	sk->sk_write_space      =       sock_def_write_space;
+	sk->sk_error_report     =       sock_def_error_report;
+	sk->sk_destruct         =       sock_def_destruct;
 	//sock_init_data(NULL,sk);
 	struct inet_sock* inet=inet_sk(sk);
 	inet->pinet6=NULL;
 	inet->mc_list   = NULL;
 	int optlen=0;
 	struct ip_options_rcu __rcu * inet_opt=malloc0(sizeof(struct ip_options_rcu));
-
+	struct xfrm_policy *policy=malloc(sizeof(struct xfrm_policy));
+	klee_make_symbolic(policy,sizeof(*policy),"sk->sk_policy0");
+	sk->sk_policy[0]=policy;
+	policy=malloc(sizeof(struct xfrm_policy));
+	klee_make_symbolic(policy,sizeof(*policy),"sk->sk_policy1");
+	sk->sk_policy[1]=policy;
 	inet_opt->opt.optlen=0;
-		klee_make_symbolic(inet_opt,sizeof(struct ip_options_rcu)+inet_opt->opt.optlen,"inet_sk->inet_opt");
-
+	klee_make_symbolic(inet_opt,sizeof(struct ip_options_rcu)+inet_opt->opt.optlen,"inet_sk->inet_opt");
+	inet_opt->opt.optlen=0;
 	inet->inet_opt=inet_opt;
-	}
+}
 
 
 	extern  struct dst_ops ipv4_dst_ops;
@@ -1421,12 +1456,13 @@ struct socket* faked_sock_alloc(void){
 		memcpy(skb_transport_header(skb),&th,sizeof(th));
 
 		tcp_prot.init(sk);
-		sk->sk_send_head=NULL;
 		init_sock2(sk);
-		skb_queue_head(&sk->sk_write_queue,skb);
+		//skb_queue_head(&sk->sk_write_queue,skb);
 		skb->cloned=0;
 		struct tcp_sock* tk=sk;
-		tk->retransmit_skb_hint=NULL;
+		tk->retransmit_skb_hint=tcp_write_queue_head(sk);
+		sk->sk_send_head=tcp_write_queue_head(sk);
+		
 		/* 
 		u16  tcp_header_len,gso_segs;
 		 klee_make_symbolic(&tcp_header_len,sizeof(tcp_header_len),"tk->tcp_header_len");
@@ -1482,25 +1518,30 @@ struct socket* faked_sock_alloc(void){
 
 	}
 	void init_net2(void){
-#define SYMBOL_DEFINE_SNMP_STAT(type,name,label) \
+#define SYMBOL_DEFINE_SNMP_STAT(type,name) \
 		int name ## _size=sizeof(type);\
 		type name;\
-		klee_make_symbolic(&name,sizeof(__typeof__(type)),"(&init_net)->mib."#name);\
+		klee_make_symbolic(&name,sizeof(__typeof__(type)),"init_net.mib."#name);\
 		(&init_net)->mib.name=malloc0(name ## _size);\
 		memcpy((&init_net)->mib.name,&name,name ## _size);
-		SYMBOL_DEFINE_SNMP_STAT(struct ipstats_mib,ip_statistics,"ip_mibs")
-		struct tcp_mib tcp_mibs;//=malloc(sizeof(struct tcp_mib));
-		klee_make_symbolic(&tcp_mibs,sizeof(struct tcp_mib),"(&init_net)->mib.tcp_statistics");
+		SYMBOL_DEFINE_SNMP_STAT(struct ipstats_mib,ip_statistics)
+		SYMBOL_DEFINE_SNMP_STAT(struct icmp_mib, icmp_statistics)
+SYMBOL_DEFINE_SNMP_STAT(struct tcp_mib, tcp_statistics)
+SYMBOL_DEFINE_SNMP_STAT(struct linux_mib, net_statistics)
+SYMBOL_DEFINE_SNMP_STAT(struct icmpmsg_mib, icmpmsg_statistics)
+/*		
+struct tcp_mib tcp_mibs;//=malloc(sizeof(struct tcp_mib));
+		klee_make_symbolic(&tcp_mibs,sizeof(struct tcp_mib),"init_net.mib.tcp_statistics");
 		(&init_net)->mib.tcp_statistics=malloc0(sizeof(struct tcp_mib));
 		int tcp_size=sizeof(struct tcp_mib);
 		memcpy((&init_net)->mib.tcp_statistics,&tcp_mibs,tcp_size);
 		struct linux_mib net_statistics;//=malloc0(sizeof(struct linux_mib));
 		(&init_net)->mib.net_statistics=malloc0(sizeof(struct linux_mib));
-		klee_make_symbolic(&net_statistics,sizeof(struct linux_mib),"(&init_net)->mib.net_statistics");
+		klee_make_symbolic(&net_statistics,sizeof(struct linux_mib),"init_net.mib.net_statistics");
 		int linux_size=sizeof(struct linux_mib);
 		memcpy((&init_net)->mib.net_statistics,&net_statistics,linux_size);
-		klee_make_symbolic(&dev,sizeof(dev),"dev");
-	}
+		//klee_make_symbolic(&dev,sizeof(dev),"dev");
+*/	}
 #undef current
 #define current NULL
 #undef preempt_disable()
@@ -1577,12 +1618,16 @@ struct socket* faked_sock_alloc(void){
 	tcp_rcv_established(tk,skb,th,skb->len);
 	int i=0;
 	printf("test---result---------------");
-	for(i=0;i<TCP_MIB_MAX ;i++){
-		klee_make_observable("(&init_net)->mib.tcp_statistics",(&init_net)->mib.tcp_statistics->mibs[i]);
+#define PRINT_MIB(type,name)\
+	for(i=0;i<sizeof(type)/sizeof(unsigned long);i++){\
+		klee_make_observable("init_net.mib."#name ".mibs",init_net.mib.name->mibs[i]);	\
 	}
-	for(i=0;i<LINUX_MIB_MAX;i++){
-		klee_make_observable("(&init_net)->mib.net_statistics",(&init_net)->mib.net_statistics->mibs[i]);
-	}
+	PRINT_MIB(struct tcp_mib, tcp_statistics)
+	PRINT_MIB(struct ipstats_mib, ip_statistics)
+	PRINT_MIB(struct linux_mib, net_statistics)
+	PRINT_MIB(struct icmp_mib, icmp_statistics)
+	PRINT_MIB(struct icmpmsg_mib, icmpmsg_statistics)
+	
 	printf("\n");
 //	free(skb);
 	//free(th);
