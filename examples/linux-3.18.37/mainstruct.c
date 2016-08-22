@@ -1457,7 +1457,7 @@ void init_sock2(struct sock* sk){
 
 		tcp_prot.init(sk);
 		init_sock2(sk);
-		//skb_queue_head(&sk->sk_write_queue,skb);
+		skb_queue_head(&sk->sk_write_queue,skb);
 		skb->cloned=0;
 		struct tcp_sock* tk=sk;
 		tk->retransmit_skb_hint=tcp_write_queue_head(sk);

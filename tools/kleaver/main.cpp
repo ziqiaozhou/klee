@@ -30,9 +30,9 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "llvm/Support/FileSystem.h"
 #include <sys/stat.h>
 #include <unistd.h>
-
 
 #include "llvm/Support/Signals.h"
 
@@ -44,7 +44,6 @@
 using namespace llvm;
 using namespace klee;
 using namespace klee::expr;
-
 namespace {
   llvm::cl::opt<std::string>
   InputFile(llvm::cl::desc("<input query log>"), llvm::cl::Positional,
@@ -54,23 +53,29 @@ namespace {
     PrintTokens,
     PrintAST,
     PrintSMTLIBv2,
-    Evaluate
+    Evaluate,
+	EvaluateMore
   };
 
   static llvm::cl::opt<ToolActions> 
   ToolAction(llvm::cl::desc("Tool actions:"),
-             llvm::cl::init(Evaluate),
-             llvm::cl::values(
-             clEnumValN(PrintTokens, "print-tokens",
-                        "Print tokens from the input file."),
-			clEnumValN(PrintSMTLIBv2, "print-smtlib",
-					   "Print parsed input file as SMT-LIBv2 query."),
-             clEnumValN(PrintAST, "print-ast",
-                        "Print parsed AST nodes from the input file."),
-             clEnumValN(Evaluate, "evaluate",
-                        "Print parsed AST nodes from the input file."),
-             clEnumValEnd));
-
+			  llvm::cl::init(EvaluateMore),
+			  llvm::cl::values(
+				  clEnumValN(PrintTokens, "print-tokens",
+					  "Print tokens from the input file."),
+				  clEnumValN(PrintSMTLIBv2, "print-smtlib",
+					  "Print parsed input file as SMT-LIBv2 query."),
+				  clEnumValN(PrintAST, "print-ast",
+					  "Print parsed AST nodes from the input file."),
+				  clEnumValN(Evaluate, "evaluate",
+					  "Print parsed AST nodes from the input file."),
+				  clEnumValN(EvaluateMore, "evaluate-more",
+					  "Print parsed AST nodes from the input file."),
+				  clEnumValEnd));
+  static llvm::cl::list<std::string>
+	  LinkedPCfiles("link-pc-file",
+				  cl::desc("Link the pc file"),
+				  cl::value_desc("pc file"));
 
   enum BuilderKinds {
     DefaultBuilder,
@@ -326,6 +331,124 @@ static bool EvaluateInputAST(const char *Filename,
   return success;
 }
 
+
+static bool EvaluateInputASTWithOtherPC(const char *Filename,
+			const MemoryBuffer *MB,
+			ExprBuilder *Builder) {
+	std::vector<Decl*> Decls;
+	std::vector<std::string>::iterator pcs_it,pc_end;
+	QueryCommand* mainQC;
+	std::vector<Parser*> allP;
+	Parser *P = Parser::Create(Filename, MB, Builder, ClearArrayAfterQuery);
+	allP.push_back(P);
+	P->SetMaxErrors(20);
+	while (Decl *D = P->ParseTopLevelDecl()) {
+		Decls.push_back(D);
+		if( QueryCommand *QC0 = dyn_cast<QueryCommand>(D)){
+			mainQC=QC0;
+		}
+	}
+	bool success = true;
+	if (unsigned N = P->GetNumErrors()) {
+		llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
+		success = false;
+	}  
+	if (!success)
+	  return false;
+
+	for(pcs_it=LinkedPCfiles.begin(),pc_end=LinkedPCfiles.end();pcs_it!=pc_end;++pcs_it){
+		const char * filename=pcs_it->c_str();
+		llvm::outs()<<"filename="<<filename<<"\n";
+
+#if LLVM_VERSION_CODE < LLVM_VERSION(3,5)
+		OwningPtr<MemoryBuffer> MB0;
+		error_code ec=MemoryBuffer::getFileOrSTDIN(filename, MB0);
+		if (ec) {
+			llvm::errs() << ": error: " << ec.message() << "\n";
+			return 1;
+		}
+#else
+		auto MBResult = MemoryBuffer::getFileOrSTDIN(filename);
+		if (!MBResult) {
+			llvm::errs()  << ": error: " << MBResult.getError().message()
+				<< "\n";
+			return 1;
+		}
+		std::unique_ptr<MemoryBuffer> &MB0 = *MBResult;
+#endif
+		P = Parser::Create(filename, MB0.get(), Builder, ClearArrayAfterQuery);
+		allP.push_back(P);
+		P->SetMaxErrors(20);
+		while (Decl *D = P->ParseTopLevelDecl()) {
+			Decls.push_back(D);
+		}
+		success = true;
+		if (unsigned N = P->GetNumErrors()) {
+			llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
+			success = false;
+		}  
+		if (!success)
+		  return false;
+	}
+  std::vector<ExprHandle> Constraints;
+  std::string path="result";
+  unsigned Index = 0;
+  llvm::raw_fd_ostream * f;
+  std::string Error; 
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_None);
+#elif LLVM_VERSION_CODE >= LLVM_VERSION(3,4)
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_Binary);
+#else
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::raw_fd_ostream::F_Binary);
+#endif
+  if(!Error.empty()){
+	  llvm::errs()<<"cannot open file"<<Error<<"\n";
+	  return 0;
+  }
+  for (std::vector<Decl*>::iterator it = Decls.begin(),
+			  ie = Decls.end(); it != ie; ++it) {
+	  Decl *D = *it;
+	  if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
+		  llvm::outs() << "Query " << Index << ":\t";
+		  assert("FIXME: Support counterexample query commands!");
+		  llvm::outs() << "\n";
+		  for(int k=0;k<QC->Constraints.size();k++){
+			  klee::ref<klee::Expr> expr=static_cast<klee::ref<klee::Expr>>((QC->Constraints)[k]);
+			  Constraints.push_back(expr);
+		  }
+		  ++Index;
+	  }
+	  if (ArrayDecl *QC = dyn_cast<ArrayDecl>(D)) {
+		  QC->dump2file(f);
+	  }
+  }
+	  QueryCommand * QC=new QueryCommand(Constraints, mainQC->Query,mainQC->Values, mainQC->Objects);
+	  QC->dump2file(f);
+	  f->close();
+	  delete f;
+#if LLVM_VERSION_CODE < LLVM_VERSION(3,5)
+	  OwningPtr<MemoryBuffer> MB0;
+	  error_code ec=MemoryBuffer::getFileOrSTDIN(path.c_str(), MB0);
+  if (ec) {
+	  llvm::errs() << ": error: " << ec.message() << "\n";
+	  return 1;
+  }
+#else
+  auto MBResult = MemoryBuffer::getFileOrSTDIN(path.c_str());
+  if (!MBResult) {                  llvm::outs() << "VALID (counterexample request ignored)";
+	  llvm::errs()  << ": error: " << MBResult.getError().message()
+		  << "\n";
+	  return 1;
+  }
+  std::unique_ptr<MemoryBuffer> &MB0 = *MBResult;
+#endif
+  success = EvaluateInputAST(path.c_str(),MB0.get(), Builder);
+  return success;
+}
+
+
+
 static bool printInputAsSMTLIBv2(const char *Filename,
                              const MemoryBuffer *MB,
                              ExprBuilder *Builder)
@@ -450,10 +573,14 @@ int main(int argc, char **argv) {
   case Evaluate:
     success = EvaluateInputAST(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
                                MB.get(), Builder);
-    break;
+	break;
+  case EvaluateMore:
+	success = EvaluateInputASTWithOtherPC(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
+				MB.get(), Builder);
+	break;
   case PrintSMTLIBv2:
-    success = printInputAsSMTLIBv2(InputFile=="-"? "<stdin>" : InputFile.c_str(), MB.get(),Builder);
-    break;
+	success = printInputAsSMTLIBv2(InputFile=="-"? "<stdin>" : InputFile.c_str(), MB.get(),Builder);
+	break;
   default:
     llvm::errs() << argv[0] << ": error: Unknown program action!\n";
   }

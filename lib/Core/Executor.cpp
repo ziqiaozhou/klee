@@ -755,17 +755,21 @@ bool replace(std::string& str, const std::string& from, const std::string& to) {
 			str.replace(start_pos, from.length(), to);
 			return true;
 }
+#include <sys/types.h>
+#include <sys/stat.h>
+struct stat info;
 std::string Executor::getCurrentLine(ExecutionState * state){
 	std::stringstream msg;
 	Instruction * lastInst;
 	const InstructionInfo &ii = getLastNonKleeInternalInstruction(*state, &lastInst);
 	if (ii.file != ""){
 		std::string filename=ii.file;
-		replace(filename,"/home/ziqiao","/playpen/ziqiao");
+		if(stat(filename.c_str(), &info )!=0)	
+			replace(filename,"/home/ziqiao","/playpen/ziqiao");
 		std::fstream file(filename);
 		std::string linestr=GotoLine(file,ii.line);
-		if (filename.find("/playpen/ziqiao/2project/klee/examples/linux-3.18.37")>-1){
-			msg<<"("<<linestr<<")\t"<<filename.substr(strlen("/playpen/ziqiao/2project/klee/examples/linux-3.18.37"),filename.length())<<":"<<ii.line;
+		if (filename.find("linux-3.18.37")>-1){
+			msg<<"("<<linestr<<")\t"<<filename.substr(filename.find("linux-3.18.37")+strlen("linux-3.18.37"),filename.length())<<":"<<ii.line;
 		}else{
 			msg<<"("<<linestr<<")\t"<<filename<<":"<<ii.line;
 		}

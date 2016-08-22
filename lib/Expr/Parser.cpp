@@ -1619,6 +1619,43 @@ void ArrayDecl::dump() {
     llvm::outs() << "]\n";
   }
 }
+void ArrayDecl::dump2file(llvm::raw_fd_ostream * f) {
+  *f << "array " << Root->name
+            << "[" << Root->size << "]"
+            << " : " << 'w' << Domain << " -> " << 'w' << Range << " = ";
+
+  if (Root->isSymbolicArray()) {
+    *f << "symbolic\n";
+  } else {
+    *f << '[';
+    for (unsigned i = 0, e = Root->size; i != e; ++i) {
+      if (i)
+        *f << " ";
+     *f << Root->constantValues[i];
+    }
+   *f << "]\n";
+  }
+}
+
+void QueryCommand::dump2file(llvm::raw_fd_ostream *f ) {
+	const ExprHandle *ValuesBegin = 0, *ValuesEnd = 0;
+	const Array * const* ObjectsBegin = 0, * const* ObjectsEnd = 0;
+	if (!Values.empty()) {
+		ValuesBegin = &Values[0];
+		ValuesEnd = ValuesBegin + Values.size();
+	}
+	if (!Objects.empty()) {
+		ObjectsBegin = &Objects[0];
+		ObjectsEnd = ObjectsBegin + Objects.size();
+	}
+	std::string str;
+	llvm::raw_string_ostream info(str);
+	ExprPPrinter::printQuery(info, ConstraintManager(Constraints),
+				Query, ValuesBegin, ValuesEnd,
+				ObjectsBegin, ObjectsEnd,
+				false);
+	*f<<info.str();
+}
 
 void QueryCommand::dump() {
   const ExprHandle *ValuesBegin = 0, *ValuesEnd = 0;

@@ -66,6 +66,7 @@ namespace expr {
     /// dump - Dump the AST node to stderr.
     virtual void dump() = 0;
 
+	virtual void dump2file(llvm::raw_fd_ostream *f)=0;
     static bool classof(const Decl *) { return true; }
   };
 
@@ -99,6 +100,7 @@ namespace expr {
 
     virtual void dump();
 
+	virtual void dump2file(llvm::raw_fd_ostream *f);
     static bool classof(const Decl *D) {
       return D->getKind() == Decl::ArrayDeclKind;
     }
@@ -195,7 +197,7 @@ namespace expr {
         Objects(_Objects) {}
 
     virtual void dump();
-
+	virtual void dump2file(llvm::raw_fd_ostream *f);
     static bool classof(const Decl *D) {
       return D->getKind() == QueryCommandDeclKind;
     }
