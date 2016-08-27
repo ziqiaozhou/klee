@@ -1,0 +1,14 @@
+Error: memory error: out of bound pointer
+File: /playpen/ziqiao/2project/klee/runtime/Intrinsic/memset.c
+Line: 14
+assembly.ll line: 1295
+Stack: 
+	#000001295 in memset (dst=48602756, s=0, count=1) at /playpen/ziqiao/2project/klee/runtime/Intrinsic/memset.c:14
+	#100000156 in hash (result0=48602752, key0=50135008, data0=48602736, n=4, m) at /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:37
+	#200000500 in main (argc=2, argv=49969504) at /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:105
+Info: 
+	address: 48602756
+	next: object at 48602768 of size 4
+		MO69[4] allocated at main():  %data = alloca [4 x i8], align 1
+	prev: object at 48602752 of size 4
+		MO70[4] allocated at main():  %result = alloca i32, align 4

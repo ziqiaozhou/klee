@@ -1,0 +1,519 @@
+0	inet_conn.icsk_inet.sk.__sk_common.skc_addrpair	long long unsigned int
+64	inet_conn.icsk_inet.sk.__sk_common.skc_hash	unsigned int
+64	inet_conn.icsk_inet.sk.__sk_common.skc_u16hashes[0]	unsigned short
+80	inet_conn.icsk_inet.sk.__sk_common.skc_u16hashes[1]	unsigned short
+96	inet_conn.icsk_inet.sk.__sk_common.skc_portpair	unsigned int
+128	inet_conn.icsk_inet.sk.__sk_common.skc_family	unsigned short
+144	inet_conn.icsk_inet.sk.__sk_common.skc_state	unsigned char
+152	inet_conn.icsk_inet.sk.__sk_common.skc_reuse	unsigned char
+156	inet_conn.icsk_inet.sk.__sk_common.skc_reuseport	unsigned char
+157	inet_conn.icsk_inet.sk.__sk_common.skc_ipv6only	unsigned char
+160	inet_conn.icsk_inet.sk.__sk_common.skc_bound_dev_if	int
+192	inet_conn.icsk_inet.sk.__sk_common.skc_bind_node.next	u8
+256	inet_conn.icsk_inet.sk.__sk_common.skc_bind_node.pprev	u8
+192	inet_conn.icsk_inet.sk.__sk_common.skc_portaddr_node.next	u8
+256	inet_conn.icsk_inet.sk.__sk_common.skc_portaddr_node.pprev	u8
+320	inet_conn.icsk_inet.sk.__sk_common.skc_prot	u8
+384	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[0]	unsigned char
+392	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[1]	unsigned char
+400	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[2]	unsigned char
+408	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[3]	unsigned char
+416	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[4]	unsigned char
+424	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[5]	unsigned char
+432	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[6]	unsigned char
+440	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[7]	unsigned char
+448	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[8]	unsigned char
+456	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[9]	unsigned char
+464	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[10]	unsigned char
+472	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[11]	unsigned char
+480	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[12]	unsigned char
+488	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[13]	unsigned char
+496	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[14]	unsigned char
+504	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr8[15]	unsigned char
+384	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr16[0]	unsigned short
+400	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr16[1]	unsigned short
+416	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr16[2]	unsigned short
+432	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr16[3]	unsigned short
+448	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr16[4]	unsigned short
+464	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr16[5]	unsigned short
+480	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr16[6]	unsigned short
+496	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr16[7]	unsigned short
+384	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr32[0]	unsigned int
+416	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr32[1]	unsigned int
+448	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr32[2]	unsigned int
+480	inet_conn.icsk_inet.sk.__sk_common.skc_v6_daddr.in6_u.u6_addr32[3]	unsigned int
+512	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[0]	unsigned char
+520	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[1]	unsigned char
+528	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[2]	unsigned char
+536	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[3]	unsigned char
+544	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[4]	unsigned char
+552	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[5]	unsigned char
+560	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[6]	unsigned char
+568	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[7]	unsigned char
+576	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[8]	unsigned char
+584	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[9]	unsigned char
+592	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[10]	unsigned char
+600	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[11]	unsigned char
+608	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[12]	unsigned char
+616	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[13]	unsigned char
+624	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[14]	unsigned char
+632	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8[15]	unsigned char
+512	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr16[0]	unsigned short
+528	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr16[1]	unsigned short
+544	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr16[2]	unsigned short
+560	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr16[3]	unsigned short
+576	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr16[4]	unsigned short
+592	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr16[5]	unsigned short
+608	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr16[6]	unsigned short
+624	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr16[7]	unsigned short
+512	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32[0]	unsigned int
+544	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32[1]	unsigned int
+576	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32[2]	unsigned int
+608	inet_conn.icsk_inet.sk.__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr32[3]	unsigned int
+640	inet_conn.icsk_inet.sk.__sk_common.skc_node.next	u8
+704	inet_conn.icsk_inet.sk.__sk_common.skc_node.pprev	u8
+640	inet_conn.icsk_inet.sk.__sk_common.skc_nulls_node.next	u8
+704	inet_conn.icsk_inet.sk.__sk_common.skc_nulls_node.pprev	u8
+768	inet_conn.icsk_inet.sk.__sk_common.skc_tx_queue_mapping	int
+800	inet_conn.icsk_inet.sk.__sk_common.skc_refcnt.counter	int
+832	inet_conn.icsk_inet.sk.sk_lock.owned	int
+896	inet_conn.icsk_inet.sk.sk_lock.wq.task_list.next	u8
+960	inet_conn.icsk_inet.sk.sk_lock.wq.task_list.prev	u8
+1024	inet_conn.icsk_inet.sk.sk_receive_queue.next	u8
+1088	inet_conn.icsk_inet.sk.sk_receive_queue.prev	u8
+1152	inet_conn.icsk_inet.sk.sk_receive_queue.qlen	unsigned int
+1216	inet_conn.icsk_inet.sk.sk_backlog.rmem_alloc.counter	int
+1248	inet_conn.icsk_inet.sk.sk_backlog.len	int
+1280	inet_conn.icsk_inet.sk.sk_backlog.head	u8
+1344	inet_conn.icsk_inet.sk.sk_backlog.tail	u8
+1408	inet_conn.icsk_inet.sk.sk_forward_alloc	int
+1440	inet_conn.icsk_inet.sk.sk_txhash	unsigned int
+1472	inet_conn.icsk_inet.sk.sk_napi_id	unsigned int
+1504	inet_conn.icsk_inet.sk.sk_ll_usec	unsigned int
+1536	inet_conn.icsk_inet.sk.sk_drops.counter	int
+1568	inet_conn.icsk_inet.sk.sk_rcvbuf	int
+1600	inet_conn.icsk_inet.sk.sk_filter	u8
+1664	inet_conn.icsk_inet.sk.sk_wq	u8
+1728	inet_conn.icsk_inet.sk.sk_policy[0]	u8
+1792	inet_conn.icsk_inet.sk.sk_policy[1]	u8
+1856	inet_conn.icsk_inet.sk.sk_flags	long unsigned int
+1920	inet_conn.icsk_inet.sk.sk_rx_dst	u8
+1984	inet_conn.icsk_inet.sk.sk_dst_cache	u8
+2048	inet_conn.icsk_inet.sk.sk_wmem_alloc.counter	int
+2080	inet_conn.icsk_inet.sk.sk_omem_alloc.counter	int
+2112	inet_conn.icsk_inet.sk.sk_sndbuf	int
+2176	inet_conn.icsk_inet.sk.sk_write_queue.next	u8
+2240	inet_conn.icsk_inet.sk.sk_write_queue.prev	u8
+2304	inet_conn.icsk_inet.sk.sk_write_queue.qlen	unsigned int
+2368	inet_conn.icsk_inet.sk.sk_shutdown	unsigned int
+2370	inet_conn.icsk_inet.sk.sk_no_check_tx	unsigned int
+2371	inet_conn.icsk_inet.sk.sk_no_check_rx	unsigned int
+2372	inet_conn.icsk_inet.sk.sk_userlocks	unsigned int
+2376	inet_conn.icsk_inet.sk.sk_protocol	unsigned int
+2384	inet_conn.icsk_inet.sk.sk_type	unsigned int
+2400	inet_conn.icsk_inet.sk.sk_wmem_queued	int
+2432	inet_conn.icsk_inet.sk.sk_allocation	unsigned int
+2464	inet_conn.icsk_inet.sk.sk_pacing_rate	unsigned int
+2496	inet_conn.icsk_inet.sk.sk_max_pacing_rate	unsigned int
+2560	inet_conn.icsk_inet.sk.sk_route_caps	long long unsigned int
+2624	inet_conn.icsk_inet.sk.sk_route_nocaps	long long unsigned int
+2688	inet_conn.icsk_inet.sk.sk_gso_type	int
+2720	inet_conn.icsk_inet.sk.sk_gso_max_size	unsigned int
+2752	inet_conn.icsk_inet.sk.sk_gso_max_segs	unsigned short
+2784	inet_conn.icsk_inet.sk.sk_rcvlowat	int
+2816	inet_conn.icsk_inet.sk.sk_lingertime	long unsigned int
+2880	inet_conn.icsk_inet.sk.sk_error_queue.next	u8
+2944	inet_conn.icsk_inet.sk.sk_error_queue.prev	u8
+3008	inet_conn.icsk_inet.sk.sk_error_queue.qlen	unsigned int
+3072	inet_conn.icsk_inet.sk.sk_prot_creator	u8
+3136	inet_conn.icsk_inet.sk.sk_err	int
+3168	inet_conn.icsk_inet.sk.sk_err_soft	int
+3200	inet_conn.icsk_inet.sk.sk_ack_backlog	unsigned short
+3216	inet_conn.icsk_inet.sk.sk_max_ack_backlog	unsigned short
+3232	inet_conn.icsk_inet.sk.sk_priority	unsigned int
+3264	inet_conn.icsk_inet.sk.sk_peer_pid	u8
+3328	inet_conn.icsk_inet.sk.sk_peer_cred	u8
+3392	inet_conn.icsk_inet.sk.sk_rcvtimeo	long int
+3456	inet_conn.icsk_inet.sk.sk_sndtimeo	long int
+3520	inet_conn.icsk_inet.sk.sk_protinfo	u8
+3584	inet_conn.icsk_inet.sk.sk_timer.entry.next	u8
+3648	inet_conn.icsk_inet.sk.sk_timer.entry.prev	u8
+3712	inet_conn.icsk_inet.sk.sk_timer.expires	long unsigned int
+3776	inet_conn.icsk_inet.sk.sk_timer.base	u8
+3840	inet_conn.icsk_inet.sk.sk_timer.function	u8
+3904	inet_conn.icsk_inet.sk.sk_timer.data	long unsigned int
+3968	inet_conn.icsk_inet.sk.sk_timer.slack	int
+4032	inet_conn.icsk_inet.sk.sk_stamp.tv64	long long int
+4096	inet_conn.icsk_inet.sk.sk_tsflags	unsigned short
+4128	inet_conn.icsk_inet.sk.sk_tskey	unsigned int
+4160	inet_conn.icsk_inet.sk.sk_socket	u8
+4224	inet_conn.icsk_inet.sk.sk_user_data	u8
+4288	inet_conn.icsk_inet.sk.sk_frag.page	u8
+4352	inet_conn.icsk_inet.sk.sk_frag.offset	unsigned int
+4384	inet_conn.icsk_inet.sk.sk_frag.size	unsigned int
+4416	inet_conn.icsk_inet.sk.sk_send_head	u8
+4480	inet_conn.icsk_inet.sk.sk_peek_off	int
+4512	inet_conn.icsk_inet.sk.sk_write_pending	int
+4544	inet_conn.icsk_inet.sk.sk_mark	unsigned int
+4576	inet_conn.icsk_inet.sk.sk_classid	unsigned int
+4608	inet_conn.icsk_inet.sk.sk_cgrp	u8
+4672	inet_conn.icsk_inet.sk.sk_state_change	u8
+4736	inet_conn.icsk_inet.sk.sk_data_ready	u8
+4800	inet_conn.icsk_inet.sk.sk_write_space	u8
+4864	inet_conn.icsk_inet.sk.sk_error_report	u8
+4928	inet_conn.icsk_inet.sk.sk_backlog_rcv	u8
+4992	inet_conn.icsk_inet.sk.sk_destruct	u8
+5056	inet_conn.icsk_inet.pinet6	u8
+5120	inet_conn.icsk_inet.inet_saddr	unsigned int
+5152	inet_conn.icsk_inet.uc_ttl	short
+5168	inet_conn.icsk_inet.cmsg_flags	unsigned short
+5184	inet_conn.icsk_inet.inet_sport	unsigned short
+5200	inet_conn.icsk_inet.inet_id	unsigned short
+5248	inet_conn.icsk_inet.inet_opt	u8
+5312	inet_conn.icsk_inet.rx_dst_ifindex	int
+5344	inet_conn.icsk_inet.tos	unsigned char
+5352	inet_conn.icsk_inet.min_ttl	unsigned char
+5360	inet_conn.icsk_inet.mc_ttl	unsigned char
+5368	inet_conn.icsk_inet.pmtudisc	unsigned char
+5376	inet_conn.icsk_inet.recverr	unsigned char
+5377	inet_conn.icsk_inet.is_icsk	unsigned char
+5378	inet_conn.icsk_inet.freebind	unsigned char
+5379	inet_conn.icsk_inet.hdrincl	unsigned char
+5380	inet_conn.icsk_inet.mc_loop	unsigned char
+5381	inet_conn.icsk_inet.transparent	unsigned char
+5382	inet_conn.icsk_inet.mc_all	unsigned char
+5383	inet_conn.icsk_inet.nodefrag	unsigned char
+5384	inet_conn.icsk_inet.rcv_tos	unsigned char
+5408	inet_conn.icsk_inet.uc_index	int
+5440	inet_conn.icsk_inet.mc_index	int
+5472	inet_conn.icsk_inet.mc_addr	unsigned int
+5504	inet_conn.icsk_inet.mc_list	u8
+5568	inet_conn.icsk_inet.cork.base.flags	unsigned int
+5600	inet_conn.icsk_inet.cork.base.addr	unsigned int
+5632	inet_conn.icsk_inet.cork.base.opt	u8
+5696	inet_conn.icsk_inet.cork.base.fragsize	unsigned int
+5728	inet_conn.icsk_inet.cork.base.length	int
+5760	inet_conn.icsk_inet.cork.base.dst	u8
+5824	inet_conn.icsk_inet.cork.base.tx_flags	unsigned char
+5832	inet_conn.icsk_inet.cork.base.ttl	unsigned char
+5840	inet_conn.icsk_inet.cork.base.tos	short
+5856	inet_conn.icsk_inet.cork.base.priority	char
+5888	inet_conn.icsk_inet.cork.fl.u.__fl_common.flowic_oif	int
+5920	inet_conn.icsk_inet.cork.fl.u.__fl_common.flowic_iif	int
+5952	inet_conn.icsk_inet.cork.fl.u.__fl_common.flowic_mark	unsigned int
+5984	inet_conn.icsk_inet.cork.fl.u.__fl_common.flowic_tos	unsigned char
+5992	inet_conn.icsk_inet.cork.fl.u.__fl_common.flowic_scope	unsigned char
+6000	inet_conn.icsk_inet.cork.fl.u.__fl_common.flowic_proto	unsigned char
+6008	inet_conn.icsk_inet.cork.fl.u.__fl_common.flowic_flags	unsigned char
+6016	inet_conn.icsk_inet.cork.fl.u.__fl_common.flowic_secid	unsigned int
+5888	inet_conn.icsk_inet.cork.fl.u.ip4.__fl_common.flowic_oif	int
+5920	inet_conn.icsk_inet.cork.fl.u.ip4.__fl_common.flowic_iif	int
+5952	inet_conn.icsk_inet.cork.fl.u.ip4.__fl_common.flowic_mark	unsigned int
+5984	inet_conn.icsk_inet.cork.fl.u.ip4.__fl_common.flowic_tos	unsigned char
+5992	inet_conn.icsk_inet.cork.fl.u.ip4.__fl_common.flowic_scope	unsigned char
+6000	inet_conn.icsk_inet.cork.fl.u.ip4.__fl_common.flowic_proto	unsigned char
+6008	inet_conn.icsk_inet.cork.fl.u.ip4.__fl_common.flowic_flags	unsigned char
+6016	inet_conn.icsk_inet.cork.fl.u.ip4.__fl_common.flowic_secid	unsigned int
+6048	inet_conn.icsk_inet.cork.fl.u.ip4.saddr	unsigned int
+6080	inet_conn.icsk_inet.cork.fl.u.ip4.daddr	unsigned int
+6112	inet_conn.icsk_inet.cork.fl.u.ip4.uli.ports.dport	unsigned short
+6128	inet_conn.icsk_inet.cork.fl.u.ip4.uli.ports.sport	unsigned short
+6112	inet_conn.icsk_inet.cork.fl.u.ip4.uli.icmpt.type	unsigned char
+6120	inet_conn.icsk_inet.cork.fl.u.ip4.uli.icmpt.code	unsigned char
+6112	inet_conn.icsk_inet.cork.fl.u.ip4.uli.dnports.dport	unsigned short
+6128	inet_conn.icsk_inet.cork.fl.u.ip4.uli.dnports.sport	unsigned short
+6112	inet_conn.icsk_inet.cork.fl.u.ip4.uli.spi	unsigned int
+6112	inet_conn.icsk_inet.cork.fl.u.ip4.uli.gre_key	unsigned int
+6112	inet_conn.icsk_inet.cork.fl.u.ip4.uli.mht.type	unsigned char
+5888	inet_conn.icsk_inet.cork.fl.u.ip6.__fl_common.flowic_oif	int
+5920	inet_conn.icsk_inet.cork.fl.u.ip6.__fl_common.flowic_iif	int
+5952	inet_conn.icsk_inet.cork.fl.u.ip6.__fl_common.flowic_mark	unsigned int
+5984	inet_conn.icsk_inet.cork.fl.u.ip6.__fl_common.flowic_tos	unsigned char
+5992	inet_conn.icsk_inet.cork.fl.u.ip6.__fl_common.flowic_scope	unsigned char
+6000	inet_conn.icsk_inet.cork.fl.u.ip6.__fl_common.flowic_proto	unsigned char
+6008	inet_conn.icsk_inet.cork.fl.u.ip6.__fl_common.flowic_flags	unsigned char
+6016	inet_conn.icsk_inet.cork.fl.u.ip6.__fl_common.flowic_secid	unsigned int
+6048	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[0]	unsigned char
+6056	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[1]	unsigned char
+6064	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[2]	unsigned char
+6072	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[3]	unsigned char
+6080	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[4]	unsigned char
+6088	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[5]	unsigned char
+6096	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[6]	unsigned char
+6104	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[7]	unsigned char
+6112	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[8]	unsigned char
+6120	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[9]	unsigned char
+6128	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[10]	unsigned char
+6136	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[11]	unsigned char
+6144	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[12]	unsigned char
+6152	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[13]	unsigned char
+6160	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[14]	unsigned char
+6168	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr8[15]	unsigned char
+6048	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr16[0]	unsigned short
+6064	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr16[1]	unsigned short
+6080	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr16[2]	unsigned short
+6096	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr16[3]	unsigned short
+6112	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr16[4]	unsigned short
+6128	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr16[5]	unsigned short
+6144	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr16[6]	unsigned short
+6160	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr16[7]	unsigned short
+6048	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr32[0]	unsigned int
+6080	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr32[1]	unsigned int
+6112	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr32[2]	unsigned int
+6144	inet_conn.icsk_inet.cork.fl.u.ip6.daddr.in6_u.u6_addr32[3]	unsigned int
+6176	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[0]	unsigned char
+6184	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[1]	unsigned char
+6192	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[2]	unsigned char
+6200	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[3]	unsigned char
+6208	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[4]	unsigned char
+6216	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[5]	unsigned char
+6224	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[6]	unsigned char
+6232	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[7]	unsigned char
+6240	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[8]	unsigned char
+6248	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[9]	unsigned char
+6256	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[10]	unsigned char
+6264	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[11]	unsigned char
+6272	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[12]	unsigned char
+6280	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[13]	unsigned char
+6288	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[14]	unsigned char
+6296	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr8[15]	unsigned char
+6176	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr16[0]	unsigned short
+6192	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr16[1]	unsigned short
+6208	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr16[2]	unsigned short
+6224	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr16[3]	unsigned short
+6240	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr16[4]	unsigned short
+6256	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr16[5]	unsigned short
+6272	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr16[6]	unsigned short
+6288	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr16[7]	unsigned short
+6176	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr32[0]	unsigned int
+6208	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr32[1]	unsigned int
+6240	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr32[2]	unsigned int
+6272	inet_conn.icsk_inet.cork.fl.u.ip6.saddr.in6_u.u6_addr32[3]	unsigned int
+6304	inet_conn.icsk_inet.cork.fl.u.ip6.flowlabel	unsigned int
+6336	inet_conn.icsk_inet.cork.fl.u.ip6.uli.ports.dport	unsigned short
+6352	inet_conn.icsk_inet.cork.fl.u.ip6.uli.ports.sport	unsigned short
+6336	inet_conn.icsk_inet.cork.fl.u.ip6.uli.icmpt.type	unsigned char
+6344	inet_conn.icsk_inet.cork.fl.u.ip6.uli.icmpt.code	unsigned char
+6336	inet_conn.icsk_inet.cork.fl.u.ip6.uli.dnports.dport	unsigned short
+6352	inet_conn.icsk_inet.cork.fl.u.ip6.uli.dnports.sport	unsigned short
+6336	inet_conn.icsk_inet.cork.fl.u.ip6.uli.spi	unsigned int
+6336	inet_conn.icsk_inet.cork.fl.u.ip6.uli.gre_key	unsigned int
+6336	inet_conn.icsk_inet.cork.fl.u.ip6.uli.mht.type	unsigned char
+5888	inet_conn.icsk_inet.cork.fl.u.dn.__fl_common.flowic_oif	int
+5920	inet_conn.icsk_inet.cork.fl.u.dn.__fl_common.flowic_iif	int
+5952	inet_conn.icsk_inet.cork.fl.u.dn.__fl_common.flowic_mark	unsigned int
+5984	inet_conn.icsk_inet.cork.fl.u.dn.__fl_common.flowic_tos	unsigned char
+5992	inet_conn.icsk_inet.cork.fl.u.dn.__fl_common.flowic_scope	unsigned char
+6000	inet_conn.icsk_inet.cork.fl.u.dn.__fl_common.flowic_proto	unsigned char
+6008	inet_conn.icsk_inet.cork.fl.u.dn.__fl_common.flowic_flags	unsigned char
+6016	inet_conn.icsk_inet.cork.fl.u.dn.__fl_common.flowic_secid	unsigned int
+6048	inet_conn.icsk_inet.cork.fl.u.dn.daddr	unsigned short
+6064	inet_conn.icsk_inet.cork.fl.u.dn.saddr	unsigned short
+6080	inet_conn.icsk_inet.cork.fl.u.dn.uli.ports.dport	unsigned short
+6096	inet_conn.icsk_inet.cork.fl.u.dn.uli.ports.sport	unsigned short
+6080	inet_conn.icsk_inet.cork.fl.u.dn.uli.icmpt.type	unsigned char
+6088	inet_conn.icsk_inet.cork.fl.u.dn.uli.icmpt.code	unsigned char
+6080	inet_conn.icsk_inet.cork.fl.u.dn.uli.dnports.dport	unsigned short
+6096	inet_conn.icsk_inet.cork.fl.u.dn.uli.dnports.sport	unsigned short
+6080	inet_conn.icsk_inet.cork.fl.u.dn.uli.spi	unsigned int
+6080	inet_conn.icsk_inet.cork.fl.u.dn.uli.gre_key	unsigned int
+6080	inet_conn.icsk_inet.cork.fl.u.dn.uli.mht.type	unsigned char
+6400	inet_conn.icsk_accept_queue.rskq_accept_head	u8
+6464	inet_conn.icsk_accept_queue.rskq_accept_tail	u8
+6528	inet_conn.icsk_accept_queue.rskq_defer_accept	unsigned char
+6592	inet_conn.icsk_accept_queue.listen_opt	u8
+6656	inet_conn.icsk_accept_queue.fastopenq	u8
+6720	inet_conn.icsk_bind_hash	u8
+6784	inet_conn.icsk_timeout	long unsigned int
+6848	inet_conn.icsk_retransmit_timer.entry.next	u8
+6912	inet_conn.icsk_retransmit_timer.entry.prev	u8
+6976	inet_conn.icsk_retransmit_timer.expires	long unsigned int
+7040	inet_conn.icsk_retransmit_timer.base	u8
+7104	inet_conn.icsk_retransmit_timer.function	u8
+7168	inet_conn.icsk_retransmit_timer.data	long unsigned int
+7232	inet_conn.icsk_retransmit_timer.slack	int
+7296	inet_conn.icsk_delack_timer.entry.next	u8
+7360	inet_conn.icsk_delack_timer.entry.prev	u8
+7424	inet_conn.icsk_delack_timer.expires	long unsigned int
+7488	inet_conn.icsk_delack_timer.base	u8
+7552	inet_conn.icsk_delack_timer.function	u8
+7616	inet_conn.icsk_delack_timer.data	long unsigned int
+7680	inet_conn.icsk_delack_timer.slack	int
+7744	inet_conn.icsk_rto	unsigned int
+7776	inet_conn.icsk_pmtu_cookie	unsigned int
+7808	inet_conn.icsk_ca_ops	u8
+7872	inet_conn.icsk_af_ops	u8
+7936	inet_conn.icsk_sync_mss	u8
+8000	inet_conn.icsk_ca_state	unsigned char
+8007	inet_conn.icsk_ca_setsockopt	unsigned char
+8008	inet_conn.icsk_retransmits	unsigned char
+8016	inet_conn.icsk_pending	unsigned char
+8024	inet_conn.icsk_backoff	unsigned char
+8032	inet_conn.icsk_syn_retries	unsigned char
+8040	inet_conn.icsk_probes_out	unsigned char
+8048	inet_conn.icsk_ext_hdr_len	unsigned short
+8064	inet_conn.icsk_ack.pending	unsigned char
+8072	inet_conn.icsk_ack.quick	unsigned char
+8080	inet_conn.icsk_ack.pingpong	unsigned char
+8088	inet_conn.icsk_ack.blocked	unsigned char
+8096	inet_conn.icsk_ack.ato	unsigned int
+8128	inet_conn.icsk_ack.timeout	long unsigned int
+8192	inet_conn.icsk_ack.lrcvtime	unsigned int
+8224	inet_conn.icsk_ack.last_seg_size	unsigned short
+8240	inet_conn.icsk_ack.rcv_mss	unsigned short
+8256	inet_conn.icsk_mtup.enabled	int
+8288	inet_conn.icsk_mtup.search_high	int
+8320	inet_conn.icsk_mtup.search_low	int
+8352	inet_conn.icsk_mtup.probe_size	int
+8384	inet_conn.icsk_ca_priv[0]	unsigned int
+8416	inet_conn.icsk_ca_priv[1]	unsigned int
+8448	inet_conn.icsk_ca_priv[2]	unsigned int
+8480	inet_conn.icsk_ca_priv[3]	unsigned int
+8512	inet_conn.icsk_ca_priv[4]	unsigned int
+8544	inet_conn.icsk_ca_priv[5]	unsigned int
+8576	inet_conn.icsk_ca_priv[6]	unsigned int
+8608	inet_conn.icsk_ca_priv[7]	unsigned int
+8640	inet_conn.icsk_ca_priv[8]	unsigned int
+8672	inet_conn.icsk_ca_priv[9]	unsigned int
+8704	inet_conn.icsk_ca_priv[10]	unsigned int
+8736	inet_conn.icsk_ca_priv[11]	unsigned int
+8768	inet_conn.icsk_ca_priv[12]	unsigned int
+8800	inet_conn.icsk_ca_priv[13]	unsigned int
+8832	inet_conn.icsk_ca_priv[14]	unsigned int
+8864	inet_conn.icsk_ca_priv[15]	unsigned int
+8896	inet_conn.icsk_user_timeout	unsigned int
+8960	tcp_header_len	unsigned short
+8976	xmit_size_goal_segs	unsigned short
+8992	pred_flags	unsigned int
+9024	rcv_nxt	unsigned int
+9056	copied_seq	unsigned int
+9088	rcv_wup	unsigned int
+9120	snd_nxt	unsigned int
+9152	snd_una	unsigned int
+9184	snd_sml	unsigned int
+9216	rcv_tstamp	unsigned int
+9248	lsndtime	unsigned int
+9280	tsoffset	unsigned int
+9344	tsq_node.next	u8
+9408	tsq_node.prev	u8
+9472	tsq_flags	long unsigned int
+9536	ucopy.prequeue.next	u8
+9600	ucopy.prequeue.prev	u8
+9664	ucopy.prequeue.qlen	unsigned int
+9728	ucopy.task	u8
+9792	ucopy.iov	u8
+9856	ucopy.memory	int
+9888	ucopy.len	int
+9920	snd_wl1	unsigned int
+9952	snd_wnd	unsigned int
+9984	max_window	unsigned int
+10016	mss_cache	unsigned int
+10048	window_clamp	unsigned int
+10080	rcv_ssthresh	unsigned int
+10112	advmss	unsigned short
+10128	unused	unsigned char
+10136	nonagle	unsigned char
+10140	thin_lto	unsigned char
+10141	thin_dupack	unsigned char
+10142	repair	unsigned char
+10143	frto	unsigned char
+10144	repair_queue	unsigned char
+10152	do_early_retrans	unsigned char
+10153	syn_data	unsigned char
+10154	syn_fastopen	unsigned char
+10155	syn_data_acked	unsigned char
+10156	is_cwnd_limited	unsigned char
+10176	tlp_high_seq	unsigned int
+10208	srtt_us	unsigned int
+10240	mdev_us	unsigned int
+10272	mdev_max_us	unsigned int
+10304	rttvar_us	unsigned int
+10336	rtt_seq	unsigned int
+10368	packets_out	unsigned int
+10400	retrans_out	unsigned int
+10432	max_packets_out	unsigned int
+10464	max_packets_seq	unsigned int
+10496	urg_data	unsigned short
+10512	ecn_flags	unsigned char
+10520	reordering	unsigned char
+10528	snd_up	unsigned int
+10560	keepalive_probes	unsigned char
+10624	rx_opt.ts_recent_stamp	long int
+10688	rx_opt.ts_recent	unsigned int
+10720	rx_opt.rcv_tsval	unsigned int
+10752	rx_opt.rcv_tsecr	unsigned int
+10784	rx_opt.saw_tstamp	unsigned short
+10785	rx_opt.tstamp_ok	unsigned short
+10786	rx_opt.dsack	unsigned short
+10787	rx_opt.wscale_ok	unsigned short
+10788	rx_opt.sack_ok	unsigned short
+10792	rx_opt.snd_wscale	unsigned short
+10796	rx_opt.rcv_wscale	unsigned short
+10800	rx_opt.num_sacks	unsigned char
+10816	rx_opt.user_mss	unsigned short
+10832	rx_opt.mss_clamp	unsigned short
+10880	snd_ssthresh	unsigned int
+10912	snd_cwnd	unsigned int
+10944	snd_cwnd_cnt	unsigned int
+10976	snd_cwnd_clamp	unsigned int
+11008	snd_cwnd_used	unsigned int
+11040	snd_cwnd_stamp	unsigned int
+11072	prior_cwnd	unsigned int
+11104	prr_delivered	unsigned int
+11136	prr_out	unsigned int
+11168	rcv_wnd	unsigned int
+11200	write_seq	unsigned int
+11232	notsent_lowat	unsigned int
+11264	pushed_seq	unsigned int
+11296	lost_out	unsigned int
+11328	sacked_out	unsigned int
+11360	fackets_out	unsigned int
+11392	tso_deferred	unsigned int
+11456	lost_skb_hint	u8
+11520	retransmit_skb_hint	u8
+11584	out_of_order_queue.next	u8
+11648	out_of_order_queue.prev	u8
+11712	out_of_order_queue.qlen	unsigned int
+11776	duplicate_sack[0].start_seq	unsigned int
+11808	duplicate_sack[0].end_seq	unsigned int
+11840	selective_acks[0].start_seq	unsigned int
+11872	selective_acks[0].end_seq	unsigned int
+11904	selective_acks[1].start_seq	unsigned int
+11936	selective_acks[1].end_seq	unsigned int
+11968	selective_acks[2].start_seq	unsigned int
+12000	selective_acks[2].end_seq	unsigned int
+12032	selective_acks[3].start_seq	unsigned int
+12064	selective_acks[3].end_seq	unsigned int
+12096	recv_sack_cache[0].start_seq	unsigned int
+12128	recv_sack_cache[0].end_seq	unsigned int
+12160	recv_sack_cache[1].start_seq	unsigned int
+12192	recv_sack_cache[1].end_seq	unsigned int
+12224	recv_sack_cache[2].start_seq	unsigned int
+12256	recv_sack_cache[2].end_seq	unsigned int
+12288	recv_sack_cache[3].start_seq	unsigned int
+12320	recv_sack_cache[3].end_seq	unsigned int
+12352	highest_sack	u8
+12416	lost_cnt_hint	int
+12448	retransmit_high	unsigned int
+12480	lost_retrans_low	unsigned int
+12512	prior_ssthresh	unsigned int
+12544	high_seq	unsigned int
+12576	retrans_stamp	unsigned int
+12608	undo_marker	unsigned int
+12640	undo_retrans	int
+12672	total_retrans	unsigned int
+12704	urg_seq	unsigned int
+12736	keepalive_time	unsigned int
+12768	keepalive_intvl	unsigned int
+12800	linger2	int
+12832	rcv_rtt_est.rtt	unsigned int
+12864	rcv_rtt_est.seq	unsigned int
+12896	rcv_rtt_est.time	unsigned int
+12928	rcvq_space.space	int
+12960	rcvq_space.seq	unsigned int
+12992	rcvq_space.time	unsigned int
+13024	mtu_probe.probe_seq_start	unsigned int
+13056	mtu_probe.probe_seq_end	unsigned int
+13088	mtu_info	unsigned int
+13120	fastopen_req	u8
+13184	fastopen_rsk	u8

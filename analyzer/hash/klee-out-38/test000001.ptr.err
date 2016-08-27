@@ -1,0 +1,13 @@
+Error: memory error: out of bound pointer
+File: /playpen/ziqiao/2project/klee/analyzer/hash/hash.c
+Line: 67
+assembly.ll line: 350
+Stack: 
+	#000000350 in hash (result0=30367384, key0=31846592, data0=30367368, n=4, m=25) at /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:67
+	#100000490 in main (argc=2, argv=31718432) at /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:105
+Info: 
+	address: 31846688
+	next: object at 31886464 of size 153
+		MO4[153] allocated at main():  %1 = alloca i32, align 4
+	prev: object at 31846592 of size 96
+		MO63[96] allocated at main():  %key = alloca [96 x i8], align 16

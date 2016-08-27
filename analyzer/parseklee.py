@@ -91,6 +91,7 @@ class Parser:
         diff=[]
         return old[len(prefix):]
 
+
     def convertOffset2Field(self,one):
         if self.isRead(one):
             readwidth=int(one[1][1:])
@@ -235,14 +236,15 @@ class Parser:
         f.close()
         of.close()
 
+#format .pc to  readable format
     def formatAll(self):
         for pathfile in os.listdir(self.pathDir):
             if pathfile.endswith(".pc"):
                 self.formatOne(self.pathDir+'/'+pathfile)
-if len(sys.argv)>3:
-    parse=Parser(sys.argv[1],sys.argv[2],sys.argv[3])
-    parse.formatAll()
-    #parse.parseResult()
+if len(sys.argv)>0:
+    parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37");
+    #parse.formatAll()
+    parse.parseResult()
     #parse.parseAll()
 
         

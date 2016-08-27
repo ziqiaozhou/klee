@@ -1,0 +1,21 @@
+klee -write-pcs -write-sym-paths -allow-external-sym-calls -only-output-states-covering-new hash.bc 3
+PID: 687
+Started: 2016-08-23 15:24:12
+BEGIN searcher description
+<InterleavedSearcher> containing 2 searchers:
+RandomPathSearcher
+WeightedRandomSearcher::CoveringNew
+</InterleavedSearcher>
+END searcher description
+Finished: 2016-08-23 15:24:18
+Elapsed: 00:00:06
+KLEE: done: explored paths = 65
+KLEE: done: avg. constructs per query = 1359
+KLEE: done: total queries = 127
+KLEE: done: valid queries = 60
+KLEE: done: invalid queries = 67
+KLEE: done: query cex = 127
+
+KLEE: done: total instructions = 684397
+KLEE: done: completed paths = 65
+KLEE: done: generated tests = 5

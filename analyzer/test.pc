@@ -1,0 +1,26 @@
+array key[32] : w32 -> w8 = symbolic
+array y[4] : w32 -> w8 = symbolic
+array tk[1656] : w32 -> w8 = symbolic
+array skb.cb[48] : w32 -> w8 = symbolic
+array skb[208] : w32 -> w8 = symbolic
+array skb.cb[48] : w32 -> w8 = symbolic
+array skb.th[20] : w32 -> w8 = symbolic
+array tk[1656] : w32 -> w8 = symbolic
+(query [(Eq N0:(ReadLSB w32 1140 tk)
+             (ReadLSB w32 0 y))
+         (Eq (ReadLSB w64 0 key)
+             3743804330914089276)
+         (Eq (ReadLSB w64 8 key)
+             1031758876512543244)
+         (Eq (ReadLSB w64 16 key)
+             801417867223405202)
+         (Eq (ReadLSB w64 24 key)
+             2291550750744555848)
+         (Eq N1:(ReadLSB w32 16 skb.cb)
+             648)
+		 (Eq false (Ult (Sub w32 N0 N1) 0))
+]
+        false []
+        [y
+         tk
+         skb.cb])

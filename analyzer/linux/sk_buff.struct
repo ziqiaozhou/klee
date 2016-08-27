@@ -1,0 +1,114 @@
+0	next	u8
+64	prev	u8
+128	tstamp.tv64	long long int
+128	skb_mstamp.v64	long long unsigned int
+192	sk	u8
+256	dev	u8
+320	cb[0]	char
+328	cb[1]	char
+336	cb[2]	char
+344	cb[3]	char
+352	cb[4]	char
+360	cb[5]	char
+368	cb[6]	char
+376	cb[7]	char
+384	cb[8]	char
+392	cb[9]	char
+400	cb[10]	char
+408	cb[11]	char
+416	cb[12]	char
+424	cb[13]	char
+432	cb[14]	char
+440	cb[15]	char
+448	cb[16]	char
+456	cb[17]	char
+464	cb[18]	char
+472	cb[19]	char
+480	cb[20]	char
+488	cb[21]	char
+496	cb[22]	char
+504	cb[23]	char
+512	cb[24]	char
+520	cb[25]	char
+528	cb[26]	char
+536	cb[27]	char
+544	cb[28]	char
+552	cb[29]	char
+560	cb[30]	char
+568	cb[31]	char
+576	cb[32]	char
+584	cb[33]	char
+592	cb[34]	char
+600	cb[35]	char
+608	cb[36]	char
+616	cb[37]	char
+624	cb[38]	char
+632	cb[39]	char
+640	cb[40]	char
+648	cb[41]	char
+656	cb[42]	char
+664	cb[43]	char
+672	cb[44]	char
+680	cb[45]	char
+688	cb[46]	char
+696	cb[47]	char
+704	_skb_refdst	long unsigned int
+768	destructor	u8
+832	sp	u8
+896	len	unsigned int
+928	data_len	unsigned int
+960	mac_len	unsigned short
+976	hdr_len	unsigned short
+992	queue_mapping	unsigned short
+1008	cloned	unsigned char
+1009	nohdr	unsigned char
+1010	fclone	unsigned char
+1012	peeked	unsigned char
+1013	head_frag	unsigned char
+1014	xmit_more	unsigned char
+1024	pkt_type	unsigned char
+1027	pfmemalloc	unsigned char
+1028	ignore_df	unsigned char
+1029	nfctinfo	unsigned char
+1032	nf_trace	unsigned char
+1033	ip_summed	unsigned char
+1035	ooo_okay	unsigned char
+1036	l4_hash	unsigned char
+1037	sw_hash	unsigned char
+1038	wifi_acked_valid	unsigned char
+1039	wifi_acked	unsigned char
+1040	no_fcs	unsigned char
+1041	encapsulation	unsigned char
+1042	encap_hdr_csum	unsigned char
+1043	csum_valid	unsigned char
+1044	csum_complete_sw	unsigned char
+1045	csum_level	unsigned char
+1047	csum_bad	unsigned char
+1048	ndisc_nodetype	unsigned char
+1050	ipvs_property	unsigned char
+1051	inner_protocol_type	unsigned char
+1056	csum	unsigned int
+1088	priority	unsigned int
+1120	skb_iif	int
+1152	hash	unsigned int
+1184	vlan_proto	unsigned short
+1200	vlan_tci	unsigned short
+1216	napi_id	unsigned int
+1248	mark	unsigned int
+1248	dropcount	unsigned int
+1248	reserved_tailroom	unsigned int
+1280	inner_protocol	unsigned short
+1280	inner_ipproto	unsigned char
+1296	inner_transport_header	unsigned short
+1312	inner_network_header	unsigned short
+1328	inner_mac_header	unsigned short
+1344	protocol	unsigned short
+1360	transport_header	unsigned short
+1376	network_header	unsigned short
+1392	mac_header	unsigned short
+1408	tail	unsigned int
+1440	end	unsigned int
+1472	head	u8
+1536	data	u8
+1600	truesize	unsigned int
+1632	users.counter	int

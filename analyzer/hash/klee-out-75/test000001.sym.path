@@ -1,0 +1,2 @@
+1(	klee_prefer_cex(&m,m<28 && m>2);)	/playpen/ziqiao/2project/klee/analyzer/hash/hash.c:74
+0(	 for (i=0;i*bitwidth<m;i++){)	/playpen/ziqiao/2project/klee/analyzer/hash/hash.c:35

@@ -1,0 +1,6 @@
+Error: failed external call: atoi
+File: /playpen/ziqiao/2project/klee/analyzer/hash/hash.c
+Line: 89
+assembly.ll line: 469
+Stack: 
+	#000000469 in main (argc=1, argv=31800352) at /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:89
