@@ -54,7 +54,8 @@ namespace {
     PrintAST,
     PrintSMTLIBv2,
     Evaluate,
-	EvaluateMore
+	EvaluateMore,
+	EvaluateOr
   };
 
   static llvm::cl::opt<ToolActions> 
@@ -70,6 +71,8 @@ namespace {
 				  clEnumValN(Evaluate, "evaluate",
 					  "Print parsed AST nodes from the input file."),
 				  clEnumValN(EvaluateMore, "evaluate-more",
+					  "Print parsed AST nodes from the input file."),
+				  clEnumValN(EvaluateOr, "evaluate-or",
 					  "Print parsed AST nodes from the input file."),
 				  clEnumValEnd));
   static llvm::cl::list<std::string>
@@ -330,7 +333,143 @@ static bool EvaluateInputAST(const char *Filename,
 
   return success;
 }
+static ExprHandle createAnd(std::vector<ExprHandle> kids,ExprBuilder * builder){
+	unsigned n_kids = kids.size();
+	assert(n_kids);
+	if (n_kids == 1)
+	  return kids[0];
 
+	ExprHandle r = builder->And(kids[n_kids-2], kids[n_kids-1]);
+	for (int i=n_kids-3; i>=0; i--)
+	  r = builder->Or(kids[i], r);
+	return r;
+}
+static ExprHandle createOr(std::vector<ExprHandle> kids,ExprBuilder * builder){
+	unsigned n_kids = kids.size();
+	assert(n_kids);
+	if (n_kids == 1)
+	  return kids[0];
+
+	ExprHandle r = builder->Or(kids[n_kids-2], kids[n_kids-1]);
+	for (int i=n_kids-3; i>=0; i--)
+	  r = builder->Or(kids[i], r);
+	return r;
+}
+static bool EvaluateInputASTOrOtherPC(const char *Filename,
+			const MemoryBuffer *MB,
+			ExprBuilder *Builder) {
+	std::vector<Decl*> Decls;
+	std::vector<ExprHandle> OrExprVec;
+	std::vector<std::string>::iterator pcs_it,pc_end;
+	QueryCommand* mainQC;
+	std::vector<Parser*> allP;
+	Parser *P = Parser::Create(Filename, MB, Builder, ClearArrayAfterQuery);
+	allP.push_back(P);
+	P->SetMaxErrors(20);
+	while (Decl *D = P->ParseTopLevelDecl()) {
+		Decls.push_back(D);
+		if( QueryCommand *QC0 = dyn_cast<QueryCommand>(D)){
+			mainQC=QC0;
+		}
+	}
+	bool success = true;
+	if (unsigned N = P->GetNumErrors()) {
+		llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
+		success = false;
+	}  
+	if (!success)
+	  return false;
+
+	for(pcs_it=LinkedPCfiles.begin(),pc_end=LinkedPCfiles.end();pcs_it!=pc_end;++pcs_it){
+		const char * filename=pcs_it->c_str();
+		llvm::outs()<<"filename="<<filename<<"\n";
+
+#if LLVM_VERSION_CODE < LLVM_VERSION(3,5)
+		OwningPtr<MemoryBuffer> MB0;
+		error_code ec=MemoryBuffer::getFileOrSTDIN(filename, MB0);
+		if (ec) {
+			llvm::errs() << ": error: " << ec.message() << "\n";
+			return 1;
+		}
+#else
+		auto MBResult = MemoryBuffer::getFileOrSTDIN(filename);
+		if (!MBResult) {
+			llvm::errs()  << ": error: " << MBResult.getError().message()
+				<< "\n";
+			return 1;
+		}
+		std::unique_ptr<MemoryBuffer> &MB0 = *MBResult;
+#endif
+		P = Parser::Create(filename, MB0.get(), Builder, ClearArrayAfterQuery);
+		allP.push_back(P);
+		P->SetMaxErrors(20);
+		while (Decl *D = P->ParseTopLevelDecl()) {
+			Decls.push_back(D);
+		}
+		success = true;
+		if (unsigned N = P->GetNumErrors()) {
+			llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
+			success = false;
+		}  
+		if (!success)
+		  return false;
+	}
+  std::vector<ExprHandle> Constraints;
+
+  std::string path="or.pc";
+  unsigned Index = 0;
+  llvm::raw_fd_ostream * f;
+  std::string Error; 
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_None);
+#elif LLVM_VERSION_CODE >= LLVM_VERSION(3,4)
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_Binary);
+#else
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::raw_fd_ostream::F_Binary);
+#endif
+  if(!Error.empty()){
+	  llvm::errs()<<"cannot open file"<<Error<<"\n";
+	  return 0;
+  }
+  for (std::vector<Decl*>::iterator it = Decls.begin(),
+			  ie = Decls.end(); it != ie; ++it) {
+	  Decl *D = *it;
+	  if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
+		  llvm::outs() << "Query " << Index << ":\t";
+		  assert("FIXME: Support counterexample query commands!");
+		  llvm::outs() << "\n";
+		  ExprHandle AndExpr=createAnd(QC->Constraints,Builder);
+		  OrExprVec.push_back(AndExpr);
+		  ++Index;
+	  }
+	  if (ArrayDecl *QC = dyn_cast<ArrayDecl>(D)) {
+		  QC->dump2file(f);
+	  }
+  }
+  Constraints.push_back(createOr(OrExprVec,Builder));
+  QueryCommand * QC=new QueryCommand(Constraints, mainQC->Query,mainQC->Values, mainQC->Objects);
+  QC->dump2file(f);
+  f->close();
+  delete f;
+#if LLVM_VERSION_CODE < LLVM_VERSION(3,5)
+  OwningPtr<MemoryBuffer> MB0;
+  error_code ec=MemoryBuffer::getFileOrSTDIN(path.c_str(), MB0);
+  if (ec) {
+	  llvm::errs() << ": error: " << ec.message() << "\n";
+	  return 1;
+  }
+#else
+  auto MBResult = MemoryBuffer::getFileOrSTDIN(path.c_str());
+  if (!MBResult) {                  llvm::outs() << "VALID (counterexample request ignored)";
+	  llvm::errs()  << ": error: " << MBResult.getError().message()
+		  << "\n";
+	  return 1;
+  }
+  std::unique_ptr<MemoryBuffer> &MB0 = *MBResult;
+#endif
+  success = EvaluateInputAST(path.c_str(),MB0.get(), Builder);
+  return success;
+}
 
 static bool EvaluateInputASTWithOtherPC(const char *Filename,
 			const MemoryBuffer *MB,
@@ -578,6 +717,10 @@ int main(int argc, char **argv) {
 	success = EvaluateInputASTWithOtherPC(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
 				MB.get(), Builder);
 	break;
+  case EvaluateOr:
+	success= EvaluateInputASTOrOtherPC(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
+				MB.get(), Builder);
+
   case PrintSMTLIBv2:
 	success = printInputAsSMTLIBv2(InputFile=="-"? "<stdin>" : InputFile.c_str(), MB.get(),Builder);
 	break;
