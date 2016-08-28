@@ -79,6 +79,11 @@ namespace {
 	  LinkedPCfiles("link-pc-file",
 				  cl::desc("Link the pc file"),
 				  cl::value_desc("pc file"));
+static llvm::cl::opt<std::string>
+	  OutPath("out",
+				  cl::desc("specify the out pc file"),
+				  cl::value_desc("out file"),
+				  cl::init("result.pc"));
 
   enum BuilderKinds {
     DefaultBuilder,
@@ -415,8 +420,7 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 		  return false;
 	}
   std::vector<ExprHandle> Constraints;
-
-  std::string path="or.pc";
+  std::string path=OutPath;
   unsigned Index = 0;
   llvm::raw_fd_ostream * f;
   std::string Error; 
@@ -451,23 +455,6 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
   QC->dump2file(f);
   f->close();
   delete f;
-#if LLVM_VERSION_CODE < LLVM_VERSION(3,5)
-  OwningPtr<MemoryBuffer> MB0;
-  error_code ec=MemoryBuffer::getFileOrSTDIN(path.c_str(), MB0);
-  if (ec) {
-	  llvm::errs() << ": error: " << ec.message() << "\n";
-	  return 1;
-  }
-#else
-  auto MBResult = MemoryBuffer::getFileOrSTDIN(path.c_str());
-  if (!MBResult) {                  llvm::outs() << "VALID (counterexample request ignored)";
-	  llvm::errs()  << ": error: " << MBResult.getError().message()
-		  << "\n";
-	  return 1;
-  }
-  std::unique_ptr<MemoryBuffer> &MB0 = *MBResult;
-#endif
-  success = EvaluateInputAST(path.c_str(),MB0.get(), Builder);
   return success;
 }
 
@@ -525,12 +512,16 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
 		if (unsigned N = P->GetNumErrors()) {
 			llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
 			success = false;
-		}  
+		}  static llvm::cl::list<std::string>
+	  LinkedPCfiles("link-pc-file",
+				  cl::desc("Link the pc file"),
+				  cl::value_desc("pc file"));
+
 		if (!success)
 		  return false;
 	}
   std::vector<ExprHandle> Constraints;
-  std::string path="result";
+  std::string path=OutPath;
   unsigned Index = 0;
   llvm::raw_fd_ostream * f;
   std::string Error; 
