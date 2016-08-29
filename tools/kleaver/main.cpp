@@ -374,7 +374,10 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 
 	std::vector<ExprHandle> mainConstraints;
 	while (Decl *D = P->ParseTopLevelDecl()) {
-		if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
+	
+	  if (ArrayDecl *QC = dyn_cast<ArrayDecl>(D)) {
+		  Decls.push_back(D);
+	  }else if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
 			for(int k=0;k<QC->Constraints.size();k++){
 				klee::ref<klee::Expr> expr=static_cast<klee::ref<klee::Expr>>((QC->Constraints)[k]);
 				mainConstraints.push_back(expr);
@@ -416,7 +419,9 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 		std::vector<ExprHandle> Constraints;
 		Constraints.clear();
 		while (Decl *D = P->ParseTopLevelDecl()) {
-			if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
+			if (ArrayDecl *QC = dyn_cast<ArrayDecl>(D)) {
+				Decls.push_back(D);
+			}else if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
 				for(int k=0;k<QC->Constraints.size();k++){
 					klee::ref<klee::Expr> expr=static_cast<klee::ref<klee::Expr>>((QC->Constraints)[k]);
 					Constraints.push_back(expr);
@@ -451,6 +456,14 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 
   finalConstraints.push_back(createOr(OrExprVec,Builder));
   QueryCommand * QC=new QueryCommand(finalConstraints, mainQC->Query,mainQC->Values, mainQC->Objects);
+  for (std::vector<Decl*>::iterator it = Decls.begin(),
+			  ie = Decls.end(); it != ie; ++it) {
+	  Decl *D = *it;
+	  if (ArrayDecl *QC = dyn_cast<ArrayDecl>(D)) {
+		  QC->dump2file(f);
+	  }
+  }
+
   QC->dump2file(f);
   f->close();
   delete f;
