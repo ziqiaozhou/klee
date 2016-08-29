@@ -423,9 +423,9 @@ class Parser:
         cf.close()
     allIndex=[]
 
-    def mergePC(suffix):
+    def mergePC(self,suffix):
         f=open(self.outDir+'result.class')
-        alObs=[]
+        allObs=[]
         for line in f:
             obfiles=line.split()
             allObs.append(obfiles)
@@ -434,14 +434,51 @@ class Parser:
         for index in range(0,len(allObs)):
             obfiles=allObs[index]
             numOb=len(obfiles)
-            for k in range(1,numOb):
-                ob=obfiles[k]
-                pcindex=int(ob.replace('test',''))
-                pcfile=str(pcindex)+suffix
-                command=command+" -link-pc-file="+self.outDir+'pcfile'
-            command=command+' -out='+self.mergedDir+str(index)+'.mergedpc'+' '+self.outDir+str(int(obfiles[0].replace('test','')))+suffix
-            result=subprocess.check_output(command,shell=True)
-
+            iterative=0
+            hasError=True
+            while hasError and iterative<numOb:
+                iterative=iterative+1
+                command='kleaver -builder=simplify -evaluate-or'
+                tested=range(0,numOb)
+                tested.remove(iterative-1)
+                for k in tested:
+                    ob=obfiles[k]
+                    pcindex=int(ob.replace('test','').replace(':',''))
+                    pcfile=str(pcindex)+suffix
+                    command=command+" -link-pc-file="+self.outDir+pcfile
+                    result=subprocess.check_output('kleaver -evaluate-or -out='+ob+'.tmp'+' '+self.outDir+pcfile,stderr=subprocess.STDOUT,shell=True)
+                    result=subprocess.check_output('kleaver -evaluate '+ob+'.tmp',stderr=subprocess.STDOUT,shell=True)
+                    if result.find("Error")>0:
+                        print "allert"
+                mergedfile=self.mergedDir+str(index)+'.mergedpc'
+                command=command+' -out='+self.mergedDir+str(index)+'.mergedpc'+' '+self.outDir+str(int(obfiles[iterative-1].replace('test','')))+suffix
+                result=subprocess.check_output(command,shell=True)
+                f=open(mergedfile)
+                declare=[]
+                query=[]
+                for line in f:
+                    if line.startswith('array'):
+                        declare.append(line)
+                        setdeclare=set(declare)
+                    else:
+                        query.append(line)
+                f.close()
+                f=open(mergedfile,'w')
+                f.write(''.join(list(setdeclare))+''.join(query))
+                f.close()
+                try:
+                    result=subprocess.check_output('kleaver -evaluate '+mergedfile,stderr=subprocess.STDOUT,shell=True)
+                    if result.find("Error")>0:
+                        hasError=True
+                        print mergedfile,'!!!error!!!'
+                        print command
+                    else:
+                        hasError=False;
+                        print "good"
+                except:
+                    hasError=True
+                    pause();
+                    print 'bad'+command
     def createPCstoSolveAttacker(self,secretFile,Dir,suffix='.attacker',Individual=True):
         f=open(secretFile)
         nonsecretSym=[]
@@ -627,8 +664,8 @@ class Parser:
                 break;
         return maxnum
 if len(sys.argv)>1:
-    parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-out-25/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
-    parse.mergedPC('.pc0')
+    parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
+    parse.mergePC('.pc0')
    # parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.attacker',True);
     #parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.pc0',False);
     #parse.formatAll(parse.outDir,'.attacker');
