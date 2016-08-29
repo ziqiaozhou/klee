@@ -371,12 +371,18 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 	Parser *P = Parser::Create(Filename, MB, Builder, ClearArrayAfterQuery);
 	allP.push_back(P);
 	P->SetMaxErrors(20);
+
+	std::vector<ExprHandle> mainConstraints;
 	while (Decl *D = P->ParseTopLevelDecl()) {
 		Decls.push_back(D);
-		if( QueryCommand *QC0 = dyn_cast<QueryCommand>(D)){
-			mainQC=QC0;
+		if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
+			for(int k=0;k<QC->Constraints.size();k++){
+				klee::ref<klee::Expr> expr=static_cast<klee::ref<klee::Expr>>((QC->Constraints)[k]);
+				mainConstraints.push_back(expr);
+			}
 		}
 	}
+	OrExprVec.push_back(createAnd(mainConstraints,Builder));
 	bool success = true;
 	if (unsigned N = P->GetNumErrors()) {
 		llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
@@ -408,9 +414,17 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 		P = Parser::Create(filename, MB0.get(), Builder, ClearArrayAfterQuery);
 		allP.push_back(P);
 		P->SetMaxErrors(20);
+		ExprHandle AndExpr;
+		std::vector<ExprHandle> Constraints;
 		while (Decl *D = P->ParseTopLevelDecl()) {
-			Decls.push_back(D);
+			if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
+				for(int k=0;k<QC->Constraints.size();k++){
+					klee::ref<klee::Expr> expr=static_cast<klee::ref<klee::Expr>>((QC->Constraints)[k]);
+					Constraints.push_back(expr);
+				}
+			}
 		}
+		OrExprVec.push_back(createAnd(Constraints,Builder));
 		success = true;
 		if (unsigned N = P->GetNumErrors()) {
 			llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
@@ -419,9 +433,9 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 		if (!success)
 		  return false;
 	}
-  std::vector<ExprHandle> Constraints;
-  std::string path=OutPath;
-  unsigned Index = 0;
+	std::vector<ExprHandle> finalConstraints;
+	std::string path=OutPath;
+	unsigned Index = 0;
   llvm::raw_fd_ostream * f;
   std::string Error; 
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
@@ -435,23 +449,9 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 	  llvm::errs()<<"cannot open file"<<Error<<"\n";
 	  return 0;
   }
-  for (std::vector<Decl*>::iterator it = Decls.begin(),
-			  ie = Decls.end(); it != ie; ++it) {
-	  Decl *D = *it;
-	  if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
-		  llvm::outs() << "Query " << Index << ":\t";
-		  assert("FIXME: Support counterexample query commands!");
-		  llvm::outs() << "\n";
-		  ExprHandle AndExpr=createAnd(QC->Constraints,Builder);
-		  OrExprVec.push_back(AndExpr);
-		  ++Index;
-	  }
-	  if (ArrayDecl *QC = dyn_cast<ArrayDecl>(D)) {
-		  QC->dump2file(f);
-	  }
-  }
-  Constraints.push_back(createOr(OrExprVec,Builder));
-  QueryCommand * QC=new QueryCommand(Constraints, mainQC->Query,mainQC->Values, mainQC->Objects);
+
+  finalConstraints.push_back(createOr(OrExprVec,Builder));
+  QueryCommand * QC=new QueryCommand(finalConstraints, mainQC->Query,mainQC->Values, mainQC->Objects);
   QC->dump2file(f);
   f->close();
   delete f;
