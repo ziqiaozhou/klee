@@ -374,7 +374,6 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 
 	std::vector<ExprHandle> mainConstraints;
 	while (Decl *D = P->ParseTopLevelDecl()) {
-		Decls.push_back(D);
 		if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
 			for(int k=0;k<QC->Constraints.size();k++){
 				klee::ref<klee::Expr> expr=static_cast<klee::ref<klee::Expr>>((QC->Constraints)[k]);
@@ -412,10 +411,10 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 		std::unique_ptr<MemoryBuffer> &MB0 = *MBResult;
 #endif
 		P = Parser::Create(filename, MB0.get(), Builder, ClearArrayAfterQuery);
-		allP.push_back(P);
 		P->SetMaxErrors(20);
 		ExprHandle AndExpr;
 		std::vector<ExprHandle> Constraints;
+		Constraints.clear();
 		while (Decl *D = P->ParseTopLevelDecl()) {
 			if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
 				for(int k=0;k<QC->Constraints.size();k++){
