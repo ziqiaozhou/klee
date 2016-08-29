@@ -242,6 +242,9 @@ class Parser:
     def __init__(self,pathDir0,symbolfile0,linuxfolder0,structDir):
         self.pathDir=pathDir0
         self.outDir=self.pathDir+"result/"
+        self.mergedDir=self.outDir+'merged/'
+        os.system('mkdir '+self.outDir)
+        os.system('mkdir '+self.mergedDir)
         self.symbolfile=symbolfile0
         self.structDir=structDir
         self.symbol_type=self.loadDef(self.symbolfile)
@@ -416,11 +419,11 @@ class Parser:
         if(printALL):
             cf.write('\n'.join([' '.join(one)+":"+str(open(self.outDir+one[0]+'.ob').read()) for one in self.Class]))
         else:
-            cf.write('\n'.join([' '.join(one)) for one in self.Class]))
+            cf.write('\n'.join([' '.join(one) for one in self.Class]))
         cf.close()
     allIndex=[]
 
-    def mergePC():
+    def mergePC(suffix):
         f=open(self.outDir+'result.class')
         alObs=[]
         for line in f:
@@ -428,9 +431,16 @@ class Parser:
             allObs.append(obfiles)
         f.close()
         mainfile=allObs[0]
-        for index in range(1,len(allObs)):
+        for index in range(0,len(allObs)):
             obfiles=allObs[index]
-            for ob in obfiles:
+            numOb=len(obfiles)
+            for k in range(1,numOb):
+                ob=obfiles[k]
+                pcindex=int(ob.replace('test',''))
+                pcfile=str(pcindex)+suffix
+                command=command+" -link-pc-file="+self.outDir+'pcfile'
+            command=command+' -out='+self.mergedDir+str(index)+'.mergedpc'+' '+self.outDir+str(int(obfiles[0].replace('test','')))+suffix
+            result=subprocess.check_output(command,shell=True)
 
     def createPCstoSolveAttacker(self,secretFile,Dir,suffix='.attacker',Individual=True):
         f=open(secretFile)
@@ -618,7 +628,7 @@ class Parser:
         return maxnum
 if len(sys.argv)>1:
     parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-out-25/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
-    
+    parse.mergedPC('.pc0')
    # parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.attacker',True);
     #parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.pc0',False);
     #parse.formatAll(parse.outDir,'.attacker');
@@ -626,7 +636,7 @@ if len(sys.argv)>1:
     #parse.parseOb('test000095.observable')
     #parse.solveA('.attacker0');
     #parse.parseResult()
-    parse.classifyOb()
+    #parse.classifyOb()
    #parse.parseAll()
 
         
