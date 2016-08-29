@@ -346,7 +346,7 @@ static ExprHandle createAnd(std::vector<ExprHandle> kids,ExprBuilder * builder){
 
 	ExprHandle r = builder->And(kids[n_kids-2], kids[n_kids-1]);
 	for (int i=n_kids-3; i>=0; i--)
-	  r = builder->Or(kids[i], r);
+	  r = builder->And(kids[i], r);
 	return r;
 }
 static ExprHandle createOr(std::vector<ExprHandle> kids,ExprBuilder * builder){
