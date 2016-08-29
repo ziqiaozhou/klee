@@ -378,6 +378,7 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 	  if (ArrayDecl *QC = dyn_cast<ArrayDecl>(D)) {
 		  Decls.push_back(D);
 	  }else if (QueryCommand *QC = dyn_cast<QueryCommand>(D)) {
+		  mainQC=QC;
 			for(int k=0;k<QC->Constraints.size();k++){
 				klee::ref<klee::Expr> expr=static_cast<klee::ref<klee::Expr>>((QC->Constraints)[k]);
 				mainConstraints.push_back(expr);
