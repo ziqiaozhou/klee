@@ -13,6 +13,7 @@ import os
 from pyparsing import nestedExpr
 import filecmp
 import itertools
+from modelCount import WeightMC
 def LOG(filename,str):
     f=open(filename,'a+')
     f.write(str)
@@ -665,7 +666,8 @@ class Parser:
         return maxnum
 if len(sys.argv)>1:
     parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
-    parse.mergePC('.pc0')
+    #parse.mergePC('.pc0')
+    count=WeightMC(parse.outDir+'1.mergedpc')
    # parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.attacker',True);
     #parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.pc0',False);
     #parse.formatAll(parse.outDir,'.attacker');
