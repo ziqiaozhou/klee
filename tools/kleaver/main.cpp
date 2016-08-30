@@ -55,7 +55,8 @@ namespace {
     PrintSMTLIBv2,
     Evaluate,
 	EvaluateMore,
-	EvaluateOr
+	EvaluateOr,
+	EvaluateAnd
   };
 
   static llvm::cl::opt<ToolActions> 
@@ -71,9 +72,12 @@ namespace {
 				  clEnumValN(Evaluate, "evaluate",
 					  "Print parsed AST nodes from the input file."),
 				  clEnumValN(EvaluateMore, "evaluate-more",
-					  "Print parsed AST nodes from the input file."),
+					  "eval parsed AST nodes from the input file."),
+				  clEnumValN(EvaluateAnd, "evaluate-and",
+					  "Print parsed AST nodes from the and input file."),
+
 				  clEnumValN(EvaluateOr, "evaluate-or",
-					  "Print parsed AST nodes from the input file."),
+					  "Print parsed AST nodes from the or input file."),
 				  clEnumValEnd));
   static llvm::cl::list<std::string>
 	  LinkedPCfiles("link-pc-file",
@@ -371,6 +375,8 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 	Parser *P = Parser::Create(Filename, MB, Builder, ClearArrayAfterQuery);
 	allP.push_back(P);
 	P->SetMaxErrors(20);
+	Solver *coreSolver = klee::createCoreSolver(CoreSolverToUse);
+
 
 	std::vector<ExprHandle> mainConstraints;
 	while (Decl *D = P->ParseTopLevelDecl()) {
@@ -473,7 +479,7 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 
 static bool EvaluateInputASTWithOtherPC(const char *Filename,
 			const MemoryBuffer *MB,
-			ExprBuilder *Builder) {
+			ExprBuilder *Builder,bool evaluate) {
 	std::vector<Decl*> Decls;
 	std::vector<std::string>::iterator pcs_it,pc_end;
 	QueryCommand* mainQC;
@@ -570,6 +576,9 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
 	  QC->dump2file(f);
 	  f->close();
 	  delete f;
+	  if(!evaluate){
+		  return 1;
+	  }
 #if LLVM_VERSION_CODE < LLVM_VERSION(3,5)
 	  OwningPtr<MemoryBuffer> MB0;
 	  error_code ec=MemoryBuffer::getFileOrSTDIN(path.c_str(), MB0);
@@ -719,8 +728,13 @@ int main(int argc, char **argv) {
 	break;
   case EvaluateMore:
 	success = EvaluateInputASTWithOtherPC(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
-				MB.get(), Builder);
+				MB.get(), Builder,1);
 	break;
+  case EvaluateAnd:
+	success= EvaluateInputASTWithOtherPC(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
+				MB.get(), Builder,0);
+	break;
+
   case EvaluateOr:
 	success= EvaluateInputASTOrOtherPC(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
 				MB.get(), Builder);
