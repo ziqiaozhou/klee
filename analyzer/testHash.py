@@ -448,7 +448,7 @@ class Parser:
                     pcfile=str(pcindex)+suffix
                     command=command+" -link-pc-file="+self.outDir+pcfile
                     result=subprocess.check_output('kleaver -evaluate-or -out='+ob+'.tmp'+' '+self.outDir+pcfile,stderr=subprocess.STDOUT,shell=True)
-                    result=subprocess.check_output('kleaver -evaluate '+ob+'.tmp',stderr=subprocess.STDOUT,shell=True)
+                    #result=subprocess.check_output('kleaver -evaluate '+ob+'.tmp',stderr=subprocess.STDOUT,shell=True)
                     if result.find("Error")>0:
                         print "allert"
                 mergedfile=self.mergedDir+str(index)+'.mergedpc'
@@ -467,7 +467,8 @@ class Parser:
                 f=open(mergedfile,'w')
                 f.write(''.join(list(setdeclare))+''.join(query))
                 f.close()
-                try:
+                hasError=False
+                '''  try:
                     result=subprocess.check_output('kleaver -evaluate '+mergedfile,stderr=subprocess.STDOUT,shell=True)
                     if result.find("Error")>0:
                         hasError=True
@@ -478,8 +479,8 @@ class Parser:
                         print "good"
                 except:
                     hasError=True
-                    pause();
-                    print 'bad'+command
+                   # pause();
+                    print 'bad'+command'''
     def createPCstoSolveAttacker(self,secretFile,Dir,suffix='.attacker',Individual=True):
         f=open(secretFile)
         nonsecretSym=[]
@@ -664,10 +665,44 @@ class Parser:
             if maxnum>=len(allIndex):
                 break;
         return maxnum
+
+
+    def formatHashFile(self):
+        for hashfile in os.listdir(self.structDir):
+            if hashfile.endswith('.pc') and hashfile.startswith('hash_'):
+                    index=int(hashfile.replace('hash_','').replace('.pc',''))
+                    mlen=math.ceil(index/8.0)
+                    f=open(self.structDir+hashfile)
+                    read=f.read()
+                    f.close()
+                    if not read.find('array tk[1656]')>=0:
+                        read='array tk[1656]: w32 -> w8 = symbolic'+'\n'+'array skb.cb[40]: w32 -> w8 = symbolic\n'+read
+
+                    read=read.replace('Ult 0','Eq ALPHA').replace('(Ult N0 2)','').replace('array key[160]','array key['+str(int(mlen*8*4))+']')
+                    querystart=read.find('[',read.find('query'))
+                    if not read.find('(Eq (ReadLSB w32 1140 tk) (ReadLSB w32 0 y))')>=0:
+                        end=read[querystart+1:]
+                        read=read[:querystart+1]+'(Eq (ReadLSB w32 1140 tk) (ReadLSB w32 0 y))\n'
+                        offset=0
+                        while offset<index*4:
+                            read=read+'(Eq (ReadLSB w64 '+str(int(offset))+' key) KEYVAL)\n'
+                            offset=offset+8
+                        read=read+'(Eq (ReadLSB w32 16 skb.cb) ATTACKERVAL)'+end
+                    read=read.replace('Eq false','Eq true')
+                    resultstart=read.rfind('false')+5
+                    if read[resultstart:].find('y ')<0:
+                        if read[resultstart:].find('[')<0:
+                            read=read[:read.rfind(')')]+' [] [y])'
+                    f=open(self.structDir+hashfile,'w')
+                    f.write(read)
+                    f.close()
+
+ 
 if len(sys.argv)>1:
     parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
-    #parse.mergePC('.pc0')
-    count=WeightMC(parse.outDir+'1.mergedpc')
+    parse.mergePC('.pc0')
+    parse.formatHashFile()
+    count=WeightMC(parse.mergedDir+'3.mergedpc',int(math.pow(2,31)+math.pow(2,30)))
    # parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.attacker',True);
     #parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.pc0',False);
     #parse.formatAll(parse.outDir,'.attacker');
