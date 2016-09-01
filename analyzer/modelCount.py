@@ -168,7 +168,7 @@ def weightMCOnce(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative):
     print 'hi'+str(iterative)
     return WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative)
 import datetime
-def WeightMC(pcfile,attackerVal=100,epsilon=0.8,sigma=0.2,S=[],r=1):
+def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.8,sigma=0.2,S=[],r=1):
     count=0
     C=[]
     wmax=1
@@ -179,19 +179,19 @@ def WeightMC(pcfile,attackerVal=100,epsilon=0.8,sigma=0.2,S=[],r=1):
     t=int(t)
     print t
     startmHash=22
-    pool = multiprocessing.Pool(processes=4)
+    pool = multiprocessing.Pool(processes=core)
     func = partial(weightMCOnce, pcfile,S,pivot,r,wmax,attackerVal,startmHash) 
     #pool.map(func, range(0,t))
     outf=open('result'+str(datetime.datetime.now().time()),'w+')
-    '''for result in pool.imap_unordered(func,range(0,t)):
+    for result in pool.imap_unordered(func,range(0,t)):
         c=result[0]
         wmax=result[1]
         startmHash=result[2]-6
         print c, wmax
         if c>=0:
             C.append(c)
-            outf.write(str(c)+'\n')'''
-    for counter in range(0,t):
+            outf.write(str(c)+'\n')
+    '''for counter in range(0,t):
         result=WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,counter)
         #pause()
         c=result[0]
@@ -199,7 +199,7 @@ def WeightMC(pcfile,attackerVal=100,epsilon=0.8,sigma=0.2,S=[],r=1):
         startmHash=result[2]-6
         print c, wmax
         if c>=0:
-            C.append(c)
+            C.append(c)'''
     finalCount=numpy.median(C)
     outf.close()
     print finalCount

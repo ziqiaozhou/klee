@@ -13,9 +13,9 @@ def nestSearch(keywords,expr,result):
 
 def searchElements(sym,pcfile):
     f=open(pcfile)
-	read=f.read().replace('\n')
-	read=read[read.find('query'):]
-	exprs=nestedExpr(opener='(',closer=')').parseString(read).asList()
-	allread=[]
-	nestSearch([)
+    read=f.read().replace('\n')
+    read=read[read.find('query'):]
+    exprs=nestedExpr(opener='(',closer=')').parseString(read).asList()
+    allread=[]
+    nestSearch([)
 
