@@ -111,41 +111,47 @@ def BSAT(pcfile,pivot,r,wmax,S):
     return [Y,wmin*r]
 
 def WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,it):
-    newpcfile=pcfile+'.tmp'+str(it)
-    os.system('cp '+pcfile+' '+newpcfile)
-    '''result=BSAT(newpcfile,pivot, r,wmax,S)
+	newpcfile=pcfile+'.tmp'+str(it)
+	tryAgain=True
+	while(tryAgain):
+		try:
+			tryAgain=False
+			os.system('cp '+pcfile+' '+newpcfile)
+		except:
+			print 'try again'
+	'''result=BSAT(newpcfile,pivot, r,wmax,S)
     Y=result[0]
     wmax=result[1]
     wY=weight(Y)
     if wY/wmax<=pivot:
         return [wY,wmax,1]'''
-    if False:
-        print 'hi'
-    else:
-        i=startmHash
-        while 1:
-            print i
-            i=i+1
-            alpha=int(random.getrandbits(i))
-            newhashfile=createHashFile(i,pcfile,alpha,attackerVal,it)
-            newpcfile=pcfile+str(it)+'.tmp_'+str(i)
-            command='kleaver -evaluate-and -out='+newpcfile+' -link-pc-file='+pcfile+' '+newhashfile
-            #command='kleaver -evaluate-and -out='+newpcfile+' '+newhashfile
+	if False:
+		print 'hi'
+	else:
+		i=startmHash
+		while 1:
+			print i
+			i=i+1
+			alpha=int(random.getrandbits(i))
+			newhashfile=createHashFile(i,pcfile,alpha,attackerVal,it)
+			newpcfile=pcfile+str(it)+'.tmp_'+str(i)
+			command='kleaver -evaluate-and -out='+newpcfile+' -link-pc-file='+pcfile+' '+newhashfile
+			#command='kleaver -evaluate-and -out='+newpcfile+' '+newhashfile
 
-            result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
-            result=BSAT(newpcfile,pivot, r,wmax,S)
-            Y=result[0]
-            wmax=result[1]
-            wY=weight(Y)
-            if (wY/wmax<=pivot and wY>0):
-                print "break",i,len(Y)
-                break
-            if i==maxMHash:
-                break
-        if wY==0 or wY/wmax>pivot:
-            return [-1,wmax,i]
-        else:
-            return [wY*math.pow(2,i-1)/wmax,wmax,i]
+			result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
+			result=BSAT(newpcfile,pivot, r,wmax,S)
+			Y=result[0]
+			wmax=result[1]
+			wY=weight(Y)
+			if (wY/wmax<=pivot and wY>0):
+				print "break",i,len(Y)
+				break
+			if i==maxMHash:
+				break
+		if wY==0 or wY/wmax>pivot:
+			return [-1,wmax,i]
+		else:
+			return [wY*math.pow(2,i-1)/wmax,wmax,i]
 def formatPCfileHash(pcfile):
     f=open(pcfile)
     read=f.read()
