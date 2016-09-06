@@ -194,7 +194,7 @@ def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
 	t=int(t)
 	print t
 	startmHash=24
-	'''pool = multiprocessing.Pool(processes=core)
+	pool = multiprocessing.Pool(processes=core)
 	func = partial(weightMCOnce, pcfile,S,pivot,r,wmax,attackerVal,startmHash) 
 	#pool.map(func, range(0,t))
 	outf=open('result'+str(datetime.datetime.now().time()),'w+')
@@ -203,10 +203,10 @@ def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
 		wmax=result[1]
 		startmHash=result[2]-6
 		print c, wmax
-        if c>=0:
-            C.append(c)
-            outf.write(str(c)+'\n')'''
-	for counter in range(0,t):
+		if c>=0:
+			C.append(c)
+			outf.write(str(c)+'\n')
+	'''	for counter in range(0,t):
 		result=WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,counter)
 		#pause()
 		c=result[0]
@@ -214,7 +214,7 @@ def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
 		startmHash=result[2]-6
 		print c, wmax
 		if c>=0:
-			C.append(c)
+			C.append(c)'''
 	finalCount=numpy.median(C)
 	outf.close()
 	print finalCount
