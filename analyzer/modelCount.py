@@ -110,7 +110,7 @@ def BSAT0(pcfile,pivot,r,wmax,S):
     print len(Y)
     return [Y,wmin*r]
 def BSAT(pcfile,pivot,r,wmax,S):
-    runcommand="kleaver -evaluate-bound -bound="+str(pivot)+' '+pcfile
+    runcommand="kleaver -evaluate-bound -bound="+str(pivot+1)+' '+pcfile
     result=subprocess.check_output(runcommand,stderr=subprocess.STDOUT,shell=True)
     lines=result.split('\n')
     for line in lines:
@@ -150,11 +150,10 @@ def WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,it):
 
 			result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
 			result=BSAT(newpcfile,pivot, r,wmax,S)
-			Y=result[0]
+			wY=result[0]
 			wmax=result[1]
-			wY=weight(Y)
 			if (wY/wmax<=pivot and wY>0):
-				print "break",i,len(Y)
+				print "break",i,wY
 				break
 			if i==maxMHash:
 				break
@@ -184,42 +183,42 @@ def weightMCOnce(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative):
     print 'hi'+str(iterative)
     return WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative)
 import datetime
-def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.8,sigma=0.2,S=[],r=1):
-    count=0
-    C=[]
-    wmax=1
-    formatPCfileHash(pcfile)
-    pivot=2*math.exp(1.5)*math.pow((1+1/epsilon),2)
-    print pivot
-    t=35*math.log(3/sigma,2)
-    t=int(t)
-    print t
-    startmHash=22
-    pool = multiprocessing.Pool(processes=core)
-    func = partial(weightMCOnce, pcfile,S,pivot,r,wmax,attackerVal,startmHash) 
-    #pool.map(func, range(0,t))
-    outf=open('result'+str(datetime.datetime.now().time()),'w+')
-    for result in pool.imap_unordered(func,range(0,t)):
-        c=result[0]
-        wmax=result[1]
-        startmHash=result[2]-6
-        print c, wmax
+def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
+	count=0
+	C=[]
+	wmax=1
+	formatPCfileHash(pcfile)
+	pivot=int(2*math.exp(1.5)*math.pow((1+1/epsilon),2))
+	print pivot
+	t=35*math.log(3/sigma,2)
+	t=int(t)
+	print t
+	startmHash=24
+	'''pool = multiprocessing.Pool(processes=core)
+	func = partial(weightMCOnce, pcfile,S,pivot,r,wmax,attackerVal,startmHash) 
+	#pool.map(func, range(0,t))
+	outf=open('result'+str(datetime.datetime.now().time()),'w+')
+	for result in pool.imap_unordered(func,range(0,t)):
+		c=result[0]
+		wmax=result[1]
+		startmHash=result[2]-6
+		print c, wmax
         if c>=0:
             C.append(c)
-            outf.write(str(c)+'\n')
-    '''for counter in range(0,t):
-        result=WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,counter)
-        #pause()
-        c=result[0]
-        wmax=result[1]
-        startmHash=result[2]-6
-        print c, wmax
-        if c>=0:
-            C.append(c)'''
-    finalCount=numpy.median(C)
-    outf.close()
-    print finalCount
-    pool.close()
-    pool.join()
+            outf.write(str(c)+'\n')'''
+	for counter in range(0,t):
+		result=WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,counter)
+		#pause()
+		c=result[0]
+		wmax=result[1]
+		startmHash=result[2]-6
+		print c, wmax
+		if c>=0:
+			C.append(c)
+	finalCount=numpy.median(C)
+	outf.close()
+	print finalCount
+	pool.close()
+	pool.join()
 
-		
+

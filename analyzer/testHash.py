@@ -703,7 +703,7 @@ if len(sys.argv)>1:
 	
 	parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
     #parse.mergePC('.pc0')
-    #parse.formatHashFile()
+	parse.formatHashFile()
 	count=WeightMC(parse.mergedDir+'3.mergedpc',int(math.pow(2,31)+math.pow(2,30)),int(sys.argv[1]))
    # parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.attacker',True);
     #parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.pc0',False);
