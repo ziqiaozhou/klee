@@ -491,6 +491,8 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
 	std::vector<std::string>::iterator pcs_it,pc_end;
 	QueryCommand* mainQC;
 	std::vector<Parser*> allP;
+
+	ConstraintManager cm;
 	Parser *P = Parser::Create(Filename, MB, Builder, ClearArrayAfterQuery);
 	allP.push_back(P);
 	P->SetMaxErrors(20);
@@ -572,6 +574,7 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
 		  for(int k=0;k<QC->Constraints.size();k++){
 			  klee::ref<klee::Expr> expr=static_cast<klee::ref<klee::Expr>>((QC->Constraints)[k]);
 			  Constraints.push_back(expr);
+			  cm.addConstraint(expr);
 		  }
 		  ++Index;
 	  }
@@ -580,9 +583,9 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
 	  }
   }
 
-  ConstraintManager *cm=new ConstraintManager(Constraints);
 
-  QueryCommand * QC=new QueryCommand(Constraints, mainQC->Query,mainQC->Values, mainQC->Objects);
+
+  QueryCommand * QC=new QueryCommand(cm.getConstraints(), mainQC->Query,mainQC->Values, mainQC->Objects);
 	  
 	  QC->dump2file(f);
 	  f->close();
