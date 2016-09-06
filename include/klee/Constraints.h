@@ -46,7 +46,9 @@ typedef std::map<ref<Expr>,unsigned>::iterator ExprBindingIter;
 
   ref<Expr> simplifyExpr(ref<Expr> e) const;
 
-
+  const std::vector<ref<Expr>> getConstraints(){
+	  return constraints;
+  };
 
   void addConstraint(ref<Expr> e);
   

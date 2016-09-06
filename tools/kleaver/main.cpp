@@ -56,7 +56,8 @@ namespace {
     Evaluate,
 	EvaluateMore,
 	EvaluateOr,
-	EvaluateAnd
+	EvaluateAnd,
+	BoundEvaluate
   };
 
   static llvm::cl::opt<ToolActions> 
@@ -75,9 +76,11 @@ namespace {
 					  "eval parsed AST nodes from the input file."),
 				  clEnumValN(EvaluateAnd, "evaluate-and",
 					  "Print parsed AST nodes from the and input file."),
-
 				  clEnumValN(EvaluateOr, "evaluate-or",
 					  "Print parsed AST nodes from the or input file."),
+				  clEnumValN(BoundEvaluate, "evaluate-bound",
+					  "Print parsed AST nodes from the or input file."),
+
 				  clEnumValEnd));
   static llvm::cl::list<std::string>
 	  LinkedPCfiles("link-pc-file",
@@ -88,7 +91,7 @@ static llvm::cl::opt<std::string>
 				  cl::desc("specify the out pc file"),
 				  cl::value_desc("out file"),
 				  cl::init("result.pc"));
-
+static llvm::cl::opt<int> Bound("bound",cl::desc("specify bound for eval"),cl::init(1));
   enum BuilderKinds {
     DefaultBuilder,
     ConstantFoldingBuilder,
@@ -441,8 +444,9 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 			llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
 			success = false;
 		}  
-		if (!success)
+		if (!success){
 		  return false;
+		}
 	}
 	std::vector<ExprHandle> finalConstraints;
 	std::string path=OutPath;
@@ -460,9 +464,12 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 	  llvm::errs()<<"cannot open file"<<Error<<"\n";
 	  return 0;
   }
+  ref<Expr> finalExpr=createOr(OrExprVec,Builder);
 
-  finalConstraints.push_back(createOr(OrExprVec,Builder));
-  QueryCommand * QC=new QueryCommand(finalConstraints, mainQC->Query,mainQC->Values, mainQC->Objects);
+  ConstraintManager cm;
+ // finalExpr=cm.simplifyExpr(finalExpr);
+  cm.addConstraint(finalExpr);
+  QueryCommand * QC=new QueryCommand(cm.getConstraints(), mainQC->Query,mainQC->Values, mainQC->Objects);
   for (std::vector<Decl*>::iterator it = Decls.begin(),
 			  ie = Decls.end(); it != ie; ++it) {
 	  Decl *D = *it;
@@ -484,6 +491,8 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
 	std::vector<std::string>::iterator pcs_it,pc_end;
 	QueryCommand* mainQC;
 	std::vector<Parser*> allP;
+
+	ConstraintManager cm;
 	Parser *P = Parser::Create(Filename, MB, Builder, ClearArrayAfterQuery);
 	allP.push_back(P);
 	P->SetMaxErrors(20);
@@ -565,6 +574,7 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
 		  for(int k=0;k<QC->Constraints.size();k++){
 			  klee::ref<klee::Expr> expr=static_cast<klee::ref<klee::Expr>>((QC->Constraints)[k]);
 			  Constraints.push_back(expr);
+			  cm.addConstraint(expr);
 		  }
 		  ++Index;
 	  }
@@ -572,7 +582,11 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
 		  QC->dump2file(f);
 	  }
   }
-	  QueryCommand * QC=new QueryCommand(Constraints, mainQC->Query,mainQC->Values, mainQC->Objects);
+
+
+
+  QueryCommand * QC=new QueryCommand(cm.getConstraints(), mainQC->Query,mainQC->Values, mainQC->Objects);
+	  
 	  QC->dump2file(f);
 	  f->close();
 	  delete f;
@@ -599,6 +613,165 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
   return success;
 }
 
+static bool BoundEvaluateInputAST(const char *Filename,
+                             const MemoryBuffer *MB,
+                             ExprBuilder *Builder,int bound) {
+  std::vector<Decl*> Decls;
+  Parser *P = Parser::Create(Filename, MB, Builder, ClearArrayAfterQuery);
+  P->SetMaxErrors(20);
+  while (Decl *D = P->ParseTopLevelDecl()) {
+    Decls.push_back(D);
+  }
+
+  bool success = true;
+  if (unsigned N = P->GetNumErrors()) {
+    llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
+    success = false;
+  }  
+
+  if (!success)
+    return false;
+
+  Solver *coreSolver = klee::createCoreSolver(CoreSolverToUse);
+
+  if (CoreSolverToUse != DUMMY_SOLVER) {
+	  if (0 != MaxCoreSolverTime) {
+		  coreSolver->setCoreSolverTimeout(MaxCoreSolverTime);
+	  }
+  }
+ 
+	  Solver *S = constructSolverChain(coreSolver,
+				  getQueryLogPath(ALL_QUERIES_SMT2_FILE_NAME),
+				  getQueryLogPath(SOLVER_QUERIES_SMT2_FILE_NAME),
+				  getQueryLogPath(ALL_QUERIES_PC_FILE_NAME),
+				  getQueryLogPath(SOLVER_QUERIES_PC_FILE_NAME));
+
+	  unsigned Index = 0;
+	  for (std::vector<Decl*>::iterator it = Decls.begin(),
+				  ie = Decls.end(); it != ie; ++it) {
+		  Decl *D = *it;
+		  if (QueryCommand *QC0 = dyn_cast<QueryCommand>(D)) {
+			  llvm::outs() << "Query " << Index << ":\t";
+
+			  assert("FIXME: Support counterexample query commands!");
+			  bool notstop=true;
+			  int count=0;
+			  
+			  std::vector<ExprHandle> Constraints=QC0->Constraints;
+			  while(notstop&& count<bound){
+				 // ConstraintManager * m=new ConstraintManager(QC->Constraints);
+
+				  QueryCommand *QC=new QueryCommand(Constraints, QC0->Query,QC0->Values,QC0->Objects);
+				  //QC->dump();
+				  notstop=false;
+				  if (QC->Values.empty() && QC->Objects.empty()) {
+					  bool result;
+					  if (S->mustBeTrue(Query(ConstraintManager(QC->Constraints), QC->Query),
+									  result)) {
+						  llvm::outs() << (result ? "VALID" : "INVALID");
+					  } else {
+						  llvm::outs() << "FAIL (reason: "
+							  << SolverImpl::getOperationStatusString(S->impl->getOperationStatusCode())
+							  << ")";
+					  }
+				  } else if (!QC->Values.empty()) {
+					  assert(QC->Objects.empty() && 
+								  "FIXME: Support counterexamples for values and objects!");
+					  assert(QC->Values.size() == 1 &&
+								  "FIXME: Support counterexamples for multiple values!");
+					  assert(QC->Query->isFalse() &&
+								  "FIXME: Support counterexamples with non-trivial query!");
+					  ref<ConstantExpr> result;
+					  if (S->getValue(Query(ConstraintManager(QC->Constraints), 
+										  QC->Values[0]),
+									  result)) {
+						  llvm::outs() << "INVALID\n";
+						  llvm::outs() << "\tExpr 0:\t" << result;
+					  } else {
+						  llvm::outs() << "FAIL (reason: "
+							  << SolverImpl::getOperationStatusString(S->impl->getOperationStatusCode())
+							  << ")";
+					  }
+				  } else {
+					  std::vector< std::vector<unsigned char> > result;
+					  if (S->getInitialValues(Query(ConstraintManager(QC->Constraints), 
+										  QC->Query),
+									  QC->Objects, result)) {
+						  notstop=true;
+						  count=count+1;
+						  llvm::outs() << "INVALID\n";
+
+						  ExprHandle avoids=Builder->True();
+						  for (unsigned i = 0, e = result.size(); i != e; ++i) {
+							  //llvm::outs() << "\tArray " << i << ":\t"
+								 // << QC->Objects[i]->name
+								//  << "[";
+
+							  UpdateList ul(QC->Objects[i],0);
+							  for (unsigned j = 0; j != QC->Objects[i]->size; ++j) {
+								  ExprHandle objExpr=ReadExpr::create(ul,ConstantExpr::alloc(j,Expr::Int32));
+								  //Builder->getInitialRead(QC->objects[i],j);
+								  llvm::APInt val(Expr::Int8,result[i][j]);
+								  ExprHandle valExpr=Builder->Constant(val);
+								  avoids= Builder->And(avoids,Builder->Eq(objExpr,valExpr));
+/*
+								  llvm::outs() << (unsigned) result[i][j];
+								  if (j + 1 != QC->Objects[i]->size)
+									llvm::outs() << ", ";*/
+							  }
+							  /*llvm::outs() << "]";
+							  if (i + 1 != e)
+								llvm::outs() << "\n";*/
+						  }
+						  avoids=Builder->Eq(Builder->False(),avoids);
+						  // avoids.dump();
+						  Constraints.push_back(avoids);
+
+
+					  } else {
+						  notstop=false;
+						  SolverImpl::SolverRunStatus retCode = S->impl->getOperationStatusCode();
+						  if (SolverImpl::SOLVER_RUN_STATUS_TIMEOUT == retCode) {
+							  llvm::outs() << " FAIL (reason: "
+								  << SolverImpl::getOperationStatusString(retCode)
+								  << ")";
+						  }           
+						  else {
+							  llvm::outs() << "VALID (counterexample request ignored)";
+						  }
+					  }
+				  }
+				  llvm::outs()<<'\n'<<"COUNT:"<<count;
+			  }
+
+			  llvm::outs() << "\n";
+			  ++Index;
+		  }
+  }
+
+  for (std::vector<Decl*>::iterator it = Decls.begin(),
+         ie = Decls.end(); it != ie; ++it)
+    delete *it;
+  delete P;
+
+  delete S;
+
+  if (uint64_t queries = *theStatisticManager->getStatisticByName("Queries")) {
+    llvm::outs()
+      << "--\n"
+      << "total queries = " << queries << "\n"
+      << "total queries constructs = " 
+      << *theStatisticManager->getStatisticByName("QueriesConstructs") << "\n"
+      << "valid queries = " 
+      << *theStatisticManager->getStatisticByName("QueriesValid") << "\n"
+      << "invalid queries = " 
+      << *theStatisticManager->getStatisticByName("QueriesInvalid") << "\n"
+      << "query cex = " 
+      << *theStatisticManager->getStatisticByName("QueriesCEX") << "\n";
+  }
+
+  return success;
+}
 
 
 static bool printInputAsSMTLIBv2(const char *Filename,
@@ -726,6 +899,11 @@ int main(int argc, char **argv) {
     success = EvaluateInputAST(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
                                MB.get(), Builder);
 	break;
+  case BoundEvaluate:
+	success = BoundEvaluateInputAST(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
+				MB.get(), Builder,Bound);
+	break;
+
   case EvaluateMore:
 	success = EvaluateInputASTWithOtherPC(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
 				MB.get(), Builder,1);
