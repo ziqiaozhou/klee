@@ -144,6 +144,7 @@ void ConstraintManager::addConstraintInternal(ref<Expr> e) {
 
   case Expr::Eq: {
     if (RewriteEqualities) {
+		llvm::out()<<"rewrite";
       // XXX: should profile the effects of this and the overhead.
       // traversing the constraints looking for equalities is hardly the
       // slowest thing we do, but it is probably nicer to have a
