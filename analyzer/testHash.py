@@ -699,7 +699,8 @@ class Parser:
 
  
 if len(sys.argv)>1:
-	os.system('export PATH=$PATH:/playpen/ziqiao/usr/bin/')
+	os.system('export PATH=$PATH:/playpen/ziqiao/usr/bin/;export LD_LIBRARY_PATH=/playpen/ziqiao/usr/lib')
+	
 	parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
     #parse.mergePC('.pc0')
     #parse.formatHashFile()
