@@ -741,9 +741,9 @@ static bool BoundEvaluateInputAST(const char *Filename,
 						  }
 					  }
 				  }
-				  llvm::outs()<<'\n'<<"COUNT:"<<count;
-			  }
 
+			  }
+			  llvm::outs()<<'\n'<<"COUNT:"<<count;
 			  llvm::outs() << "\n";
 			  ++Index;
 		  }

@@ -84,7 +84,7 @@ def weight(y):
         return len(y)
     return 1
 				
-def BSAT(pcfile,pivot,r,wmax,S):
+def BSAT0(pcfile,pivot,r,wmax,S):
     wmin=wmax/r
     wtotal=0
     Y=[]
@@ -109,6 +109,16 @@ def BSAT(pcfile,pivot,r,wmax,S):
         wmin=min(wmin,w)
     print len(Y)
     return [Y,wmin*r]
+def BSAT(pcfile,pivot,r,wmax,S):
+    runcommand="kleaver -evaluate-bound -bound="+str(pivot)+' '+pcfile
+    result=subprocess.check_output(runcommand,stderr=subprocess.STDOUT,shell=True)
+    lines=result.split('\n')
+    for line in lines:
+        pair=line.split(':')
+        if pair[0]=='COUNT':
+            count=int(pair[1])
+            break;
+    return [count,r]
 
 def WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,it):
 	newpcfile=pcfile+'.tmp'+str(it)
