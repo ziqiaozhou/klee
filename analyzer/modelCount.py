@@ -15,7 +15,6 @@ import filecmp
 import itertools
 maxMHash=32
 structDir='/playpen/ziqiao/2project/klee/analyzer/linux/'
-
 def pause():
     programPause = raw_input("Press the <ENTER> key to continue...")
 def createHashFile(i,pcfile,val,attackerVal,it):
@@ -121,44 +120,47 @@ def BSAT(pcfile,pivot,r,wmax,S):
             break;
     return [count,r]
 
-def WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,it,lock):
-    newpcfile=pcfile+'.tmp'+str(it)
-    lock.aquire()
-    os.system('cp '+pcfile+' '+newpcfile)
-    lock.release()
-        '''result=BSAT(newpcfile,pivot, r,wmax,S)
+def WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,it):
+	newpcfile=pcfile+'.tmp'+str(it)
+	tryAgain=True
+	while(tryAgain):
+		try:
+			tryAgain=False
+			os.system('cp '+pcfile+' '+newpcfile)
+		except:
+			print 'try again'
+	'''result=BSAT(newpcfile,pivot, r,wmax,S)
     Y=result[0]
     wmax=result[1]
     wY=weight(Y)
     if wY/wmax<=pivot:
         return [wY,wmax,1]'''
-    if False:
-        print 'hi'
-    else:
-            i=startmHash
-            while 1:
-                    print i
-                    i=i+1
-                    alpha=int(random.getrandbits(i))
-                    newhashfile=createHashFile(i,pcfile,alpha,attackerVal,it)
-                    newpcfile=pcfile+str(it)+'.tmp_'+str(i)
-                    command='kleaver -evaluate-and -out='+newpcfile+' -link-pc-file='+pcfile+' '+newhashfile
-                    #command='kleaver -evaluate-and -out='+newpcfile+' '+newhashfile
-                    lock.aquire()
-                    result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
-                    lock.release()
-                    result=BSAT(newpcfile,pivot, r,wmax,S)
-                    wY=result[0]
-                    wmax=result[1]
-                    if (wY/wmax<=pivot and wY>0):
-                            print "break",i,wY
-                            break
-                    if i==maxMHash:
-                            break
-            if wY==0 or wY/wmax>pivot:
-                    return [-1,wmax,i]
-            else:
-                    return [wY*math.pow(2,i-1)/wmax,wmax,i]
+	if False:
+		print 'hi'
+	else:
+		i=startmHash
+		while 1:
+			print i
+			i=i+1
+			alpha=int(random.getrandbits(i))
+			newhashfile=createHashFile(i,pcfile,alpha,attackerVal,it)
+			newpcfile=pcfile+str(it)+'.tmp_'+str(i)
+			command='kleaver -evaluate-and -out='+newpcfile+' -link-pc-file='+pcfile+' '+newhashfile
+			#command='kleaver -evaluate-and -out='+newpcfile+' '+newhashfile
+
+			result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
+			result=BSAT(newpcfile,pivot, r,wmax,S)
+			wY=result[0]
+			wmax=result[1]
+			if (wY/wmax<=pivot and wY>0):
+				print "break",i,wY
+				break
+			if i==maxMHash:
+				break
+		if wY==0 or wY/wmax>pivot:
+			return [-1,wmax,i]
+		else:
+			return [wY*math.pow(2,i-1)/wmax,wmax,i]
 def formatPCfileHash(pcfile):
     f=open(pcfile)
     read=f.read()
@@ -177,9 +179,9 @@ def formatPCfileHash(pcfile):
     f.close()
 import multiprocessing
 from functools import partial
-def weightMCOnce(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative,lock):
+def weightMCOnce(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative):
     print 'hi'+str(iterative)
-    return WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative,lock)
+    return WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative)
 import datetime
 def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
 	count=0
@@ -192,9 +194,7 @@ def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
 	t=int(t)
 	print t
 	startmHash=24
-        lock = multiprocessing.Lock()
-
-	'''pool = multiprocessing.Pool(processes=core)
+	pool = multiprocessing.Pool(processes=core)
 	func = partial(weightMCOnce, pcfile,S,pivot,r,wmax,attackerVal,startmHash) 
 	#pool.map(func, range(0,t))
 	outf=open('result'+str(datetime.datetime.now().time()),'w+')
@@ -203,18 +203,18 @@ def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
 		wmax=result[1]
 		startmHash=result[2]-6
 		print c, wmax
-        if c>=0:
-            C.append(c)
-            outf.write(str(c)+'\n')'''
-	for counter in range(0,t):
-		result=WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,counter,lock)
+		if c>=0:
+			C.append(c)
+			outf.write(str(c)+'\n')
+	'''	for counter in range(0,t):
+		result=WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,counter)
 		#pause()
 		c=result[0]
 		wmax=result[1]
 		startmHash=result[2]-6
 		print c, wmax
 		if c>=0:
-			C.append(c)
+			C.append(c)'''
 	finalCount=numpy.median(C)
 	outf.close()
 	print finalCount
