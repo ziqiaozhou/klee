@@ -424,6 +424,15 @@ class Parser:
         cf.close()
     allIndex=[]
 
+    def mergeAllPC(self,outfile,suffix):
+        Dir=self.outDir
+        mergedfiles=[]
+        for pathfile in os.listdir(Dir):
+            if pathfile.endswith(suffix):
+                mergedfiles.append(pathfile)
+        command='kleaver -evaluate-or -out='+outfile+' -link-pc-file='+' -link-pc-file='.join(mergedfiles)
+        result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
+
     def mergePC(self,suffix):
         f=open(self.outDir+'result.class')
         allObs=[]
@@ -699,12 +708,13 @@ class Parser:
 
  
 if len(sys.argv)>1:
-	os.system('export PATH=$PATH:/playpen/ziqiao/usr/bin/;export LD_LIBRARY_PATH=/playpen/ziqiao/usr/lib')
-	
-	parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
+    os.system('export PATH=$PATH:/playpen/ziqiao/usr/bin/;export LD_LIBRARY_PATH=/playpen/ziqiao/usr/lib')
+    
+    parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
     #parse.mergePC('.pc0')
-	parse.formatHashFile()
-	count=WeightMC(parse.mergedDir+'3.mergedpc',int(math.pow(2,32)-math.pow(2,10)),int(sys.argv[1]))
+    parse.mergeAllPC(parse.mergedDir+'all.pc','.pc0')
+    #parse.formatHashFile()
+    #count=WeightMC(parse.mergedDir+'3.mergedpc',int(math.pow(2,32)-math.pow(2,10)),int(sys.argv[1]))
    # parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.attacker',True);
     #parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.pc0',False);
     #parse.formatAll(parse.outDir,'.attacker');
