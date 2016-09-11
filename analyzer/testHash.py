@@ -424,13 +424,45 @@ class Parser:
         cf.close()
     allIndex=[]
 
+    def cleanDup(self,filename):
+        f=open(filename)
+        content=f.read();
+        f.close()
+        declare=[]
+        contentlst=content.split('\n')
+        for line in contentlst:
+            if line.startswith("array"):
+                if not line in declare:
+                    declare.append(line)
+            else:
+                break
+        query=content[content.find('(query'):]
+        all='\n'.join(declare)+'\n'+query
+        f=open(filename,'w+')
+        f.write(all)
+        f.close()
+
+    def checkError(self,prefix):
+        for f in os.listdir(self.pathDir):
+            if f.startswith(prefix) and f.endswith('err'):
+                return True
+        return False
     def mergeAllPC(self,outfile,suffix):
         Dir=self.outDir
-        mergedfiles=[]
+        allfiles={}
         for pathfile in os.listdir(Dir):
             if pathfile.endswith(suffix):
-                mergedfiles.append(pathfile)
-        command='kleaver -evaluate-or -out='+outfile+' -link-pc-file='+' -link-pc-file='.join(mergedfiles)
+                index=pathfile.replace(suffix,'')
+                check='test'+'0'*(6-len(index))+index
+                if self.checkError(check):
+                    print check
+                    continue
+                size=os.path.getsize(Dir+pathfile)
+                allfiles[Dir+pathfile]=size
+        mergedfiles=sorted(allfiles,key=lambda k: allfiles[k])
+        opt=' -link-pc-file='
+        command='kleaver -evaluate-or -out='+outfile+' -link-pc-file='+opt.join(mergedfiles[2:])+' '+mergedfiles[1]
+        print command
         result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
 
     def mergePC(self,suffix):
@@ -438,6 +470,10 @@ class Parser:
         allObs=[]
         for line in f:
             obfiles=line.split()
+            for pc in obfiles:
+                if self.checkError(pc):
+                    print pc
+                    obfiles.remove(pc)
             allObs.append(obfiles)
         f.close()
         mainfile=allObs[0]
@@ -713,6 +749,7 @@ if len(sys.argv)>1:
     parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
     #parse.mergePC('.pc0')
     parse.mergeAllPC(parse.mergedDir+'all.pc','.pc0')
+    parse.cleanDup( parse.mergedDir+'all.pc')
     #parse.formatHashFile()
     #count=WeightMC(parse.mergedDir+'3.mergedpc',int(math.pow(2,32)-math.pow(2,10)),int(sys.argv[1]))
    # parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.attacker',True);
