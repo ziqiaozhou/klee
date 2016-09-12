@@ -5,6 +5,7 @@ import multiprocessing
 import numpy
 import subprocess
 import copy
+import re
 import random
 import sys
 import time
@@ -109,7 +110,7 @@ def BSAT0(pcfile,pivot,r,wmax,S):
         wmin=min(wmin,w)
     print len(Y)
     return [Y,wmin*r]
-def BSAT(pcfile,pivot,r,wmax,S):
+def BSAT1(pcfile,pivot,r,wmax,S):
     runcommand="kleaver -evaluate-bound -bound="+str(pivot+1)+' '+pcfile
     result=subprocess.check_output(runcommand,stderr=subprocess.STDOUT,shell=True)
     lines=result.split('\n')
@@ -119,6 +120,65 @@ def BSAT(pcfile,pivot,r,wmax,S):
             count=int(pair[1])
             break;
     return [count,r]
+def BSAT(pcfile,pivot,r,wmax,S):
+    f=open(pcfile)
+    read=f.read()
+    f.close()
+    declare=[]
+    lst=read.split('\n')
+    syms=[]
+    for line in lst:
+        if line.startswith('array'):
+            declare.append(line)
+            one=line.split()
+            sym=one[1]
+            sym=sym[:sym.find('[')]
+            syms.append(sym)
+    falseindex=read.rfind('false')
+    endquery=read.rfind(']',0,falseindex)
+    startquery=read.find('[',read.find('(query'))+1
+    query=read[startquery:endquery]
+    end=read[endquery:]
+    newdeclareis=[]
+    newqueries=[]
+    diff=[]
+    nsym=len(syms)
+    finalpcfile= pcfile+'tmp'
+
+    command='kleaver -evaluate-and -out='+pcfile+'tmp'
+    for i in range(0,pivot+1):
+        newquery=query
+        newdeclare=[]
+        for k in range(0,nsym):
+            line=declare[k]
+            newline=line.replace('[',str(i)+'[')
+            newdeclare.append(newline)
+            #newquery=re.sub(r'\b'+syms[k]+'\b',syms[k]+str(i),newquery)
+            newquery=newquery.replace(' '+syms[k]+')',' '+syms[k]+str(i)+')').replace(' '+syms[k]+']',' '+syms[k]+str(i)+']').replace('['+syms[k]+']','['+syms[k]+str(i)+']')    
+        if i>0:
+            new='(Ult (ReadLSB w32 0 y'+str(i)+') (ReadLSB w32 0 y'+str(i-1)+'))'
+            diff.append(new)
+        newqueries.append(newquery)
+        newend=end.replace('[y]','[y'+str(i)+']')
+        write='\n'.join(newdeclare)+'\n'+'(query ['+newquery+'\n'+newend 
+        newpcfile=pcfile+'tmp'+str(i)
+        f=open(newpcfile,'w+')
+        f.write(write)
+        f.close()
+        if i<pivot:
+            command=command+' -link-pc-file='+newpcfile
+        else:
+            command=command+' '+newpcfile
+    print command
+    subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
+    runcommand="kleaver -evaluate " +finalpcfile
+    result=subprocess.check_output(runcommand,stderr=subprocess.STDOUT,shell=True)
+    if result.find('INVALID')>0:
+        return [pivot+1,r]
+    else:
+        BSAT1(pcfile,pivot,r,wmax,S)
+
+
 
 def WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,it):
 	newpcfile=pcfile+'.tmp'+str(it)
