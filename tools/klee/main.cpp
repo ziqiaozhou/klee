@@ -560,7 +560,7 @@ if(WriteObservable){
 	llvm::raw_ostream *f = openTestFile("observable", id);
 	*f<<"test\n";
 	for(unsigned i=0;i<state.observables.size();i++){
-		*f<<std::get<0>(state.observables[i])<<": "<<std::get<1>(state.observables[i])<<"\n";
+		*f<<"(Eq "<<std::get<0>(state.observables[i])<<" "<<std::get<1>(state.observables[i])<<")\n";
 	}
 	delete f;
 }
