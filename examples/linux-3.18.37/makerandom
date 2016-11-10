@@ -1,0 +1,1 @@
+clang -c -g -emit-llvm mainrandom.c

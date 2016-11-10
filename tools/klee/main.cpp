@@ -70,6 +70,8 @@
 #include <iterator>
 #include <sstream>
 #include<iostream>
+#include<vector>
+#include<utility>
 #include <tuple>
 #include <functional>
 using namespace llvm;
@@ -410,6 +412,7 @@ llvm::raw_fd_ostream *KleeHandler::openOutputFile(const std::string &filename) {
   return f;
 }
 
+
 std::string KleeHandler::getTestFilename(const std::string &suffix, unsigned id) {
   std::stringstream filename;
   filename << "test" << std::setfill('0') << std::setw(6) << id << '.' << suffix;
@@ -480,28 +483,53 @@ void KleeHandler::processTestCase(const ExecutionState &state,
       m_pathWriter->readStream(m_interpreter->getPathStreamID(state),
                                concreteBranches);
       llvm::raw_fd_ostream *f = openTestFile("path", id);
-      for (std::vector<unsigned char>::iterator I = concreteBranches.begin(),
-                                                E = concreteBranches.end();
-           I != E; ++I) {
-        *f << *I << "\n";
-      }
-      delete f;
-    }
-
-    if (errorMessage || WritePCs) {
-      std::string constraints;
-      m_interpreter->getConstraintLog(state, constraints,Interpreter::KQUERY);
-      llvm::raw_ostream *f = openTestFile("pc", id);
-	  *f << constraints;
+	  for (std::vector<unsigned char>::iterator I = concreteBranches.begin(),
+				  E = concreteBranches.end();
+				  I != E; ++I) {
+		  *f << *I << "\n";
+	  }
 	  delete f;
 	}
-if(WriteAnalyzedPCs){
-	std::string constraints;
-	m_interpreter->getConstraintLog(state, constraints,Interpreter::ANALYZE);
-	llvm::raw_ostream *f = openTestFile("apc", id);
-	*f << constraints;
-	delete f;
-}
+	std::string obstr="";
+	llvm::raw_string_ostream obstrs(obstr);
+
+	if(WriteObservable){
+		llvm::raw_ostream *f = openTestFile("observable", id);
+		*f<<"test\n";
+		for(unsigned i=0;i<state.observables.size();i++){
+			obstrs<<"(Eq "<<std::get<0>(state.observables[i])<<" "<<std::get<1>(state.observables[i])<<")\n";
+		}
+		*f<<obstrs.str();
+
+		delete f;
+	}
+
+	if (errorMessage || WritePCs) {
+		std::string constraints;
+		std:: string declarestr="";
+	llvm::raw_string_ostream declarestrs(declarestr);
+		m_interpreter->getConstraintLog(state, constraints,Interpreter::KQUERY);
+		llvm::raw_ostream *f = openTestFile("pc", id);
+		for(auto it : state.symbolics){
+			//	  MemoryObject* mo=std::get<0>(it);
+			declarestrs<<"array "<<it.second->name<<"["<<it.second->size<<"]: w32 -> w8 = symbolic\n";
+		}
+		*f << constraints;
+
+		int assert_index=constraints.rfind("]");
+		constraints.insert(assert_index,"\n"+obstrs.str());
+		llvm::raw_ostream *f2 = openTestFile("pc0", id);
+		*f2<<declarestrs.str()<<constraints;
+		delete f2;
+		f2=NULL;
+	}
+	if(WriteAnalyzedPCs){
+		std::string constraints;
+		m_interpreter->getConstraintLog(state, constraints,Interpreter::ANALYZE);
+		llvm::raw_ostream *f = openTestFile("apc", id);
+		*f << constraints;
+		  delete f;
+	  }
     if (WriteCVCs) {
       // FIXME: If using Z3 as the core solver the emitted file is actually
       // SMT-LIBv2 not CVC which is a bit confusing
@@ -556,14 +584,6 @@ if(WriteAnalyzedPCs){
          << elapsed_time << "s\n";
       delete f;
     }
-if(WriteObservable){
-	llvm::raw_ostream *f = openTestFile("observable", id);
-	*f<<"test\n";
-	for(unsigned i=0;i<state.observables.size();i++){
-		*f<<"(Eq "<<std::get<0>(state.observables[i])<<" "<<std::get<1>(state.observables[i])<<")\n";
-	}
-	delete f;
-}
   }
 }
 
