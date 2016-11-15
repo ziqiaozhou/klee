@@ -410,7 +410,6 @@ void Executor::initializeGlobalObject(ExecutionState &state, ObjectState *os,
   DataLayout *targetData = kmodule->targetData;
 #endif
    if (const ConstantVector *cp = dyn_cast<ConstantVector>(c)) {
-	   klee_warning("1");
 	   unsigned elementSize =
       targetData->getTypeStoreSize(cp->getType()->getElementType());
     for (unsigned i=0, e=cp->getNumOperands(); i != e; ++i)
@@ -431,7 +430,6 @@ void Executor::initializeGlobalObject(ExecutionState &state, ObjectState *os,
 			     offset + i*elementSize);
 	  }
   } else if (const ConstantStruct *cs = dyn_cast<ConstantStruct>(c)) {
-	  klee_warning("4");
 	  const StructLayout *sl =
       targetData->getStructLayout(cast<StructType>(cs->getType()));
     for (unsigned i=0, e=cs->getNumOperands(); i != e; ++i)
@@ -552,7 +550,6 @@ void Executor::initializeGlobals(ExecutionState &state) {
   for (Module::const_global_iterator i = m->global_begin(),
          e = m->global_end();
        i != e; ++i) {
-    klee_warning("for loop %s",i->getName());
 	if (i->isDeclaration()) {
 		// FIXME: We have no general way of handling unknown external
 		// symbols. If we really cared about making external stuff work
@@ -604,17 +601,13 @@ void Executor::initializeGlobals(ExecutionState &state) {
 		else{
         for (unsigned offset=0; offset<mo->size; offset++)
           os->write8(offset, ((unsigned char*)addr)[offset]);
-		klee_warning("ok load symbol(%s) at address{%s}",i->getName().data(),addr);
 		}
 	  }
 	} else {
-		klee_warning("else load symbol(%s) at address{%s}",i->getName().data(),addr);
 
 		LLVM_TYPE_Q Type *ty = i->getType()->getElementType();
 		
-		klee_warning("after get1 load symbol(%s) at address{%s}",i->getName().data(),addr);
 		uint64_t size = kmodule->targetData->getTypeStoreSize(ty);
-		klee_warning("after get load symbol(%s) at address{%s}",i->getName().data(),addr);
 		MemoryObject *mo = memory->allocate(size, false, true, &*i);
 		if (!mo)
 		  llvm::report_fatal_error("out of memory");
@@ -624,25 +617,20 @@ void Executor::initializeGlobals(ExecutionState &state) {
 
 		if (!i->hasInitializer())
 		  os->initializeToRandom();
-		klee_warning("after initi0");
 	}
   }
- klee_warning("after init");
   // link aliases to their definitions (if bound)
   for (Module::alias_iterator i = m->alias_begin(), ie = m->alias_end(); 
 			  i != ie; ++i) {
 	  // Map the alias to its aliasee's address. This works because we have
 	  // addresses for everything, even undefined functions. 
-	  klee_warning("insert %s",i->getName().data());
 		  globalAddresses.insert(std::make_pair(i, evalConstant(i->getAliasee())));
   }
 
-	  klee_warning("after insert");
   // once all objects are allocated, do the actual initialization
   for (Module::const_global_iterator i = m->global_begin(),
 			  e = m->global_end();
 			  i != e; ++i) {
-	  klee_warning("for get load symbol(%s) at address{%s}",i->getName().data(),addr);
 	  if (i->hasInitializer()) {
 		  MemoryObject *mo = globalObjects.find(i)->second;
 		  const ObjectState *os = state.addressSpace.findObject(mo);
@@ -653,7 +641,6 @@ void Executor::initializeGlobals(ExecutionState &state) {
 		  // if(i->isConstant()) os->setReadOnly(true);
 	  }
   }
-  klee_warning("end one symbol");
 }
 
 void Executor::branch(ExecutionState &state, 
@@ -1043,29 +1030,21 @@ void Executor::addConstraint(ExecutionState &state, ref<Expr> condition) {
 
 ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
   if (const llvm::ConstantExpr *ce = dyn_cast<llvm::ConstantExpr>(c)) {
-	  klee_warning("ConstantExpr");
 	  return evalConstantExpr(ce);
   } else {
-	  klee_warning("ConstantExpr else");
 	  if (const ConstantInt *ci = dyn_cast<ConstantInt>(c)) {
-		 klee_warning("ConstantInt");
 		  return ConstantExpr::alloc(ci->getValue());
 	  } else if (const ConstantFP *cf = dyn_cast<ConstantFP>(c)) {      
-		  klee_warning("ConstantFP");
 			  return ConstantExpr::alloc(cf->getValueAPF().bitcastToAPInt());
 	  } else if (const GlobalValue *gv = dyn_cast<GlobalValue>(c)) {
-		 klee_warning("GlobalValue");
 		  return globalAddresses.find(gv)->second;
 	  } else if (isa<ConstantPointerNull>(c)) {
-      klee_warning("isa<ConstantPointerNull>");
 		  return Expr::createPointer(0);
     } else if (isa<UndefValue>(c) || isa<ConstantAggregateZero>(c)) {
-      klee_warning("isa<UndefValue>");
 		return ConstantExpr::create(0, getWidthForLLVMType(c->getType()));
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 1)
     } else if (const ConstantDataSequential *cds =
                  dyn_cast<ConstantDataSequential>(c)) {
-     klee_warning("ConstantDataSequential");
 		std::vector<ref<Expr> > kids;
       for (unsigned i = 0, e = cds->getNumElements(); i != e; ++i) {
         ref<Expr> kid = evalConstant(cds->getElementAsConstant(i));
@@ -1075,7 +1054,6 @@ ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
       return cast<ConstantExpr>(res);
 #endif
     } else if (const ConstantStruct *cs = dyn_cast<ConstantStruct>(c)) {
-      klee_warning("ConstantStruct");
 		  const StructLayout *sl = kmodule->targetData->getStructLayout(cs->getType());
       llvm::SmallVector<ref<Expr>, 4> kids;
       for (unsigned i = cs->getNumOperands(); i != 0; --i) {
@@ -1096,7 +1074,6 @@ ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
       ref<Expr> res = ConcatExpr::createN(kids.size(), kids.data());
       return cast<ConstantExpr>(res);
     } else if (const ConstantArray *ca = dyn_cast<ConstantArray>(c)){
-      klee_warning("ConstantArray");
 		llvm::SmallVector<ref<Expr>, 4> kids;
       for (unsigned i = ca->getNumOperands(); i != 0; --i) {
         unsigned op = i-1;
@@ -1106,13 +1083,10 @@ ref<klee::ConstantExpr> Executor::evalConstant(const Constant *c) {
       ref<Expr> res = ConcatExpr::createN(kids.size(), kids.data());
       return cast<ConstantExpr>(res);
     }else if(const BlockAddress * ba= dyn_cast<BlockAddress>(c)){
-		klee_warning("Blockaddress");
 		return ConstantExpr::create(0, getWidthForLLVMType(c->getType()));
 	}else if(const ConstantVector *cv = dyn_cast<ConstantVector>(c)){
-		klee_warning("constVEctor");
 		return ConstantExpr::create(0, getWidthForLLVMType(c->getType()));
 	} else {
-		klee_warning("unknowned");
 		// Constant{Vector}
       //`llvm::report_fatal_error("invalid argument to evalConstant()");
     }
@@ -2646,13 +2620,10 @@ void Executor::bindModuleConstants() {
     for (unsigned i=0; i<kf->numInstructions; ++i)
       bindInstructionConstants(kf->instructions[i]);
   }
-klee_warning("end bindInstructionConstants");
   kmodule->constantTable = new Cell[kmodule->constants.size()];
- klee_warning("new cell %d",kmodule->constants.size());
   for (unsigned i=0; i<kmodule->constants.size(); ++i) {
     Cell &c = kmodule->constantTable[i];
 	
-	klee_warning("%d, %lx",i,&kmodule->constantTable[i]);
     c.value = evalConstant(kmodule->constants[i]);
   }
   klee_warning("end evalConstant");
