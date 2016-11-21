@@ -116,6 +116,7 @@ public:
 	  this->type=_type;
   }
   SymbolType getType()const{
+			
 	  return this->type;
   }
   ref<ConstantExpr> getBaseExpr() const { 

@@ -18,7 +18,14 @@
 using namespace klee;
 
 ///
+#if EXTERNAL_SUPPORT
+void AddressSpace::bindSharedObject(const MemoryObject *mo, ObjectState *os) {
+	assert(os->isGlobal);
+	assert(os->copyOnWriteOwner > 0);
 
+	objects = objects.insert(std::make_pair(mo, os));
+}
+#endif
 void AddressSpace::bindObject(const MemoryObject *mo, ObjectState *os) {
   assert(os->copyOnWriteOwner==0 && "object already has owner");
   os->copyOnWriteOwner = cowKey;

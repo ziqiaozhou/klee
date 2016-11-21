@@ -90,7 +90,9 @@ namespace klee {
     /* Convenience routines */
 
     std::string readStringAtAddress(ExecutionState &state, ref<Expr> address);
-    
+#if MULTITHREAD
+   bool writeConcreteValue(ExecutionState &state, ref<Expr> address, uint64_t value, Expr::Width width); 
+#endif
     /* Handlers */
 	void handleMakeType(SymbolType type,ExecutionState &state,KInstruction *target,std::vector< ref<Expr> > &arguments);
 #define HANDLER(name) void name(ExecutionState &state, \
@@ -124,7 +126,8 @@ namespace klee {
     HANDLER(handlePreferCex);
     HANDLER(handlePosixPreferCex);
     HANDLER(handlePrintExpr);
-    HANDLER(handleMakeObservable);
+    HANDLER(handleMakeShared);
+	HANDLER(handleMakeObservable);
 	HANDLER(handlePrintRange);
     HANDLER(handleRange);
     HANDLER(handleRealloc);
@@ -134,12 +137,25 @@ namespace klee {
     HANDLER(handleSilentExit);
     HANDLER(handleStackTrace);
     HANDLER(handleUnderConstrained);
-    HANDLER(handleWarning);
+    HANDLER(handleDebug);
+	HANDLER(handleWarning);
     HANDLER(handleWarningOnce);
     HANDLER(handleAddOverflow);
     HANDLER(handleMulOverflow);
     HANDLER(handleSubOverflow);
     HANDLER(handleDivRemOverflow);
+#if MULTITHREAD
+	 HANDLER(handleGetContext);
+	 HANDLER(handleGetWList);
+	 HANDLER(handleThreadCreate);
+	 HANDLER(handleThreadNotify);
+	 HANDLER(handleThreadPreempt);
+	 HANDLER(handleThreadSleep);
+	 HANDLER(handleThreadTerminate);
+   HANDLER(handleGetTime);
+    HANDLER(handleSetTime);
+
+#endif
 #undef HANDLER
   };
 } // End klee namespace

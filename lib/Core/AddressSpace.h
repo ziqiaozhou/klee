@@ -94,7 +94,9 @@ namespace klee {
     /// Add a binding to the address space.
     void bindObject(const MemoryObject *mo, ObjectState *os);
 
-    /// Remove a binding from the address space.
+
+void bindSharedObject(const MemoryObject *mo, ObjectState *os);
+	/// Remove a binding from the address space.
     void unbindObject(const MemoryObject *mo);
 
     /// Lookup a binding from a MemoryObject.

@@ -19,7 +19,9 @@
 #include "klee/Internal/Module/KModule.h"
 #include "klee/Internal/System/Time.h"
 #include "klee/Internal/Support/ErrorHandling.h"
-
+#if MULTITHREAD
+#include "Thread.h"
+#endif
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
 #include "llvm/IR/Function.h"
 #else
@@ -139,25 +141,43 @@ void Executor::processTimers(ExecutionState *current,
           ExecutionState *es = *it;
           *os << "(" << es << ",";
           *os << "[";
-          ExecutionState::stack_ty::iterator next = es->stack.begin();
+#if MULTITHREAD
+		  Thread::stack_ty::iterator next = es->stack().begin();
+		  ++next;
+		  for (Thread::stack_ty::iterator sfIt = es->stack().begin(),
+					  sf_ie = es->stack().end(); sfIt != sf_ie; ++sfIt) {
+			  *os << "('" << sfIt->kf->function->getName().str() << "',";
+			  if (next == es->stack().end()) {
+				  *os << es->prevPC()->info->line << "), ";
+#else
+		  ExecutionState::stack_ty::iterator next = es->stack.begin();
           ++next;
           for (ExecutionState::stack_ty::iterator sfIt = es->stack.begin(),
                  sf_ie = es->stack.end(); sfIt != sf_ie; ++sfIt) {
             *os << "('" << sfIt->kf->function->getName().str() << "',";
             if (next == es->stack.end()) {
               *os << es->prevPC->info->line << "), ";
-            } else {
+#endif
+			} else {
               *os << next->caller->info->line << "), ";
               ++next;
             }
           }
           *os << "], ";
-
+#if MULTITHREAD
+		  StackFrame &sf = es->stack().back();
+		  uint64_t md2u = computeMinDistToUncovered(es->pc(),
+#else
           StackFrame &sf = es->stack.back();
           uint64_t md2u = computeMinDistToUncovered(es->pc,
-                                                    sf.minDistToUncoveredOnReturn);
+#endif
+			  sf.minDistToUncoveredOnReturn);
           uint64_t icnt = theStatisticManager->getIndexedValue(stats::instructions,
-                                                               es->pc->info->id);
+#if MULTITHREAD
+			  es->pc()->info->id);
+#else
+	  es->pc->info->id);
+#endif
           uint64_t cpicnt = sf.callPathNode->statistics.getValue(stats::instructions);
 
           *os << "{";

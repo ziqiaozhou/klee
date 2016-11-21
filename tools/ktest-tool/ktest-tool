@@ -53,19 +53,24 @@ class KTest:
             size, = struct.unpack('>i', f.read(4))
             bytes = f.read(size)
             objects.append( (name,bytes) )
+        numSchedSteps, = struct.unpack('>i', f.read(4))
+        schedSteps = []
+        for i in range(numSchedSteps):
+            schedSteps.append(struct.unpack('>Q',f.read(8))[0])
 
         # Create an instance
-        b = KTest(version, args, symArgvs, symArgvLen, objects)
+        b = KTest(version, args, symArgvs, symArgvLen, objects,schedSteps)
         # Augment with extra filename field
         b.filename = path
         return b
     
-    def __init__(self, version, args, symArgvs, symArgvLen, objects):
+    def __init__(self, version, args, symArgvs, symArgvLen, objects, schedSteps):
         self.version = version
         self.symArgvs = symArgvs
         self.symArgvLen = symArgvLen
         self.args = args
         self.objects = objects
+        self.schedSteps = schedSteps
 
         # add a field that represents the name of the program used to
         # generate this .ktest file:
@@ -114,6 +119,8 @@ def main(args):
                 print('object %4d: data: %r' % (i, struct.unpack('i',str)[0]))
             else:
                 print('object %4d: data: %r' % (i, str))
+        print('num scheduling steps: %r' % len(b.schedSteps))
+        print('scheduling steps: %s' % ','.join([str(x) for x in b.schedSteps]))
         if file != args[-1]:
             print()
 

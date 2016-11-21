@@ -18,7 +18,7 @@
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/raw_ostream.h"
-
+#include "llvm/Support/CommandLine.h"
 #include <sstream>
 #include <set>
 #include <vector>
@@ -28,13 +28,15 @@ namespace llvm {
   class Type;
   class raw_ostream;
 }
-
+namespace{
+	static bool AvoidBindings=false;
+ //static llvm::cl::opt<bool> AvoidBindings("avoid-bindings", llvm::cl::init(false));
+}
 namespace klee {
 class Array;
 class ArrayCache;
 class ConstantExpr;
 class ObjectState;
-
 template<class T> class ref;
 typedef unsigned int SymbolType;
 #define	TYPE_NATIVE 0

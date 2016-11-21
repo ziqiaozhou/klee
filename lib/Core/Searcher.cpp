@@ -193,13 +193,22 @@ double WeightedRandomSearcher::getWeight(ExecutionState *es) {
   case Depth: 
     return es->weight;
   case InstCount: {
-    uint64_t count = theStatisticManager->getIndexedValue(stats::instructions,
-                                                          es->pc->info->id);
+
+	uint64_t count = theStatisticManager->getIndexedValue(stats::instructions,
+#if MULTITHREAD
+				es->pc()->info->id);
+#else
+				es->pc->info->id);
+#endif
     double inv = 1. / std::max((uint64_t) 1, count);
     return inv * inv;
   }
   case CPInstCount: {
-    StackFrame &sf = es->stack.back();
+#if MULTITHREAD
+	StackFrame &sf = es->stack().back();
+#else
+	StackFrame &sf = es->stack.back();
+#endif
     uint64_t count = sf.callPathNode->statistics.getValue(stats::instructions);
     double inv = 1. / std::max((uint64_t) 1, count);
     return inv;
@@ -208,9 +217,12 @@ double WeightedRandomSearcher::getWeight(ExecutionState *es) {
     return (es->queryCost < .1) ? 1. : 1./es->queryCost;
   case CoveringNew:
   case MinDistToUncovered: {
-    uint64_t md2u = computeMinDistToUncovered(es->pc,
+#if MULTITHREAD
+	uint64_t md2u = computeMinDistToUncovered(es->pc(),es->stack().back().minDistToUncoveredOnReturn);
+#else
+	uint64_t md2u = computeMinDistToUncovered(es->pc,
                                               es->stack.back().minDistToUncoveredOnReturn);
-
+#endif
     double invMD2U = 1. / (md2u ? md2u : 10000);
     if (type==CoveringNew) {
       double invCovNew = 0.;
@@ -302,8 +314,11 @@ BumpMergingSearcher::~BumpMergingSearcher() {
 
 Instruction *BumpMergingSearcher::getMergePoint(ExecutionState &es) {  
   if (mergeFunction) {
-    Instruction *i = es.pc->inst;
-
+#if MULTITHREAD
+	  Instruction *i = es.pc()->inst;
+#else
+	  Instruction *i = es.pc->inst;
+#endif
     if (i->getOpcode()==Instruction::Call) {
       CallSite cs(cast<CallInst>(i));
       if (mergeFunction==cs.getCalledFunction())
@@ -322,8 +337,11 @@ entry:
       statesAtMerge.begin();
     ExecutionState *es = it->second;
     statesAtMerge.erase(it);
-    ++es->pc;
-
+#if MULTITHREAD
+	++es->pc();
+#else
+		++es->pc;
+#endif
     baseSearcher->addState(es);
   }
 
@@ -346,8 +364,11 @@ entry:
         executor.terminateState(es);
       } else {
         it->second = &es; // the bump
-        ++mergeWith->pc;
-
+#if MULTITHREAD
+		++mergeWith->pc();
+#else
+		++mergeWith->pc;
+#endif
         baseSearcher->addState(mergeWith);
       }
     }
@@ -380,8 +401,11 @@ MergingSearcher::~MergingSearcher() {
 
 Instruction *MergingSearcher::getMergePoint(ExecutionState &es) {
   if (mergeFunction) {
-    Instruction *i = es.pc->inst;
-
+#if MULTITHREAD
+	  Instruction *i = es.pc()->inst;
+#else
+	  Instruction *i = es.pc->inst;
+#endif
     if (i->getOpcode()==Instruction::Call) {
       CallSite cs(cast<CallInst>(i));
       if (mergeFunction==cs.getCalledFunction())
@@ -461,8 +485,12 @@ ExecutionState &MergingSearcher::selectState() {
 
       // step past merge and toss base back in pool
       statesAtMerge.erase(statesAtMerge.find(base));
-      ++base->pc;
-      baseSearcher->addState(base);
+#if MULTITHREAD
+	  ++base->pc();
+#else
+	  ++base->pc;
+#endif
+	  baseSearcher->addState(base);
     }  
   }
   

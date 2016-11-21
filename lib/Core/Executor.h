@@ -21,6 +21,9 @@
 #include "klee/Internal/Module/KInstruction.h"
 #include "klee/Internal/Module/KModule.h"
 #include "klee/util/ArrayCache.h"
+#if MULTITHREAD
+#include "Thread.h"
+#endif
 #include "llvm/Support/raw_ostream.h"
 
 #include "llvm/ADT/Twine.h"
@@ -302,7 +305,25 @@ private:
   // not hold, respectively. One of the states is necessarily the
   // current state, and one of the states may be null.
   StatePair fork(ExecutionState &current, ref<Expr> condition, bool isInternal);
-
+#if MULTITHREAD
+  StatePair fork(ExecutionState &current);
+  Cell& getArgumentCell(StackFrame &sf, KFunction *kf, unsigned index) {
+	  return sf.locals[kf->getArgRegister(index)];
+  }
+  void bindArgumentThreadCreate(KFunction *kf,
+			  unsigned index,
+			  StackFrame &sf,
+			  ref<Expr> value);
+  KFunction* resolveFunction(ref<Expr> address);
+   void executeThreadCreate(ExecutionState &state, Thread::thread_id_t tid,
+			    ref<Expr> start_function, ref<Expr> arg);
+   // Terminate current thread on the state
+   void executeThreadExit(ExecutionState &state);
+   // Schedule next thread. If yield is true the current thread cannot be rescheduled
+    bool schedule(ExecutionState &state, bool yield, bool terminateThread);
+	// Enable and schedule a thread in the waiting list
+	void executeThreadNotifyOne(ExecutionState &state, Thread::wlist_id_t wlist);
+#endif
   /// Add the given (boolean) condition as a constraint on state. This
   /// function is a wrapper around the state's addConstraint function
   /// which also manages propagation of implied values,
@@ -319,12 +340,20 @@ private:
   Cell& getArgumentCell(ExecutionState &state,
                         KFunction *kf,
                         unsigned index) {
-    return state.stack.back().locals[kf->getArgRegister(index)];
+#if MULTITHREAD
+	  return state.stack().back().locals[kf->getArgRegister(index)];
+#else
+	  return state.stack.back().locals[kf->getArgRegister(index)];
+#endif
   }
 
   Cell& getDestCell(ExecutionState &state,
                     KInstruction *target) {
-    return state.stack.back().locals[target->dest];
+#if MULTITHREAD
+	  return state.stack().back().locals[target->dest];
+#else
+	  return state.stack.back().locals[target->dest];
+#endif
   }
 
   void bindLocal(KInstruction *target, 
@@ -485,8 +514,29 @@ public:
                                std::map<const std::string*, std::set<unsigned> > &res);
 
   Expr::Width getWidthForLLVMType(LLVM_TYPE_Q llvm::Type *type) const;
-};
+#if EXTERNAL_SUPPORT
+void bindArgumentToPthreadCreate(KFunction *kf, unsigned index, 
+			           StackFrame &sf, ref<Expr> value);
+void executeThreadCreate(ExecutionState &state, thread_id_t tid,
+			      ref<Expr> start_function, ref<Expr> arg);
+
+  void executeThreadExit(ExecutionState &state);
+    
+    void executeProcessExit(ExecutionState &state);
+	  
+	  void executeProcessFork(ExecutionState &state, KInstruction *ki,
+				        process_id_t pid);
   
+  bool schedule(ExecutionState &state, bool yield);
+    
+    void executeThreadNotifyOne(ExecutionState &state, wlist_id_t wlist);
+
+	  void executeFork(ExecutionState &state, KInstruction *ki, uint64_t reason);
+#endif
+
+};
+ 
+
 } // End klee namespace
 
 #endif

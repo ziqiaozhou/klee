@@ -20,7 +20,9 @@
 #include "klee/Internal/System/Time.h"
 #include "klee/Internal/Support/ErrorHandling.h"
 #include "klee/SolverStats.h"
-
+#if MULTITHREAD
+#include "Thread.h"
+#endif
 #include "CallPathManager.h"
 #include "CoreStats.h"
 #include "Executor.h"
@@ -285,10 +287,16 @@ void StatsTracker::stepInstruction(ExecutionState &es) {
       }
     }
 
+#if MULTITHREAD
+	Instruction *inst = es.pc()->inst;
+	const InstructionInfo &ii = *es.pc()->info;
+	StackFrame &sf = es.stack().back();
+#else
     Instruction *inst = es.pc->inst;
     const InstructionInfo &ii = *es.pc->info;
     StackFrame &sf = es.stack.back();
-    theStatisticManager->setIndex(ii.id);
+#endif
+	theStatisticManager->setIndex(ii.id);
     if (UseCallPaths)
       theStatisticManager->setContext(&sf.callPathNode->statistics);
 
@@ -317,24 +325,42 @@ void StatsTracker::stepInstruction(ExecutionState &es) {
 /* Should be called _after_ the es->pushFrame() */
 void StatsTracker::framePushed(ExecutionState &es, StackFrame *parentFrame) {
   if (OutputIStats) {
+#if MULTITHREAD
+	  StackFrame &sf = es.stack().back();
+	  framePushed(&sf,parentFrame);
+  }
+}
+void StatsTracker::framePushed(StackFrame *frame, StackFrame *parentFrame) {
+	if (OutputIStats) {
+#else
     StackFrame &sf = es.stack.back();
-
+#endif
     if (UseCallPaths) {
       CallPathNode *parent = parentFrame ? parentFrame->callPathNode : 0;
       CallPathNode *cp = callPathManager.getCallPath(parent, 
+#if MULTITHREAD
+				  frame->caller ? frame->caller->inst : 0,
+				   frame->kf->function);
+	  frame->callPathNode = cp;
+#else
                                                      sf.caller ? sf.caller->inst : 0, 
                                                      sf.kf->function);
       sf.callPathNode = cp;
-      cp->count++;
+#endif
+	  cp->count++;
     }
 
     if (updateMinDistToUncovered) {
       uint64_t minDistAtRA = 0;
       if (parentFrame)
         minDistAtRA = parentFrame->minDistToUncoveredOnReturn;
-      
+#if MULTITHREAD
+	  frame->minDistToUncoveredOnReturn = frame->caller ?
+		  computeMinDistToUncovered(frame->caller, minDistAtRA) : 0;
+#else
       sf.minDistToUncoveredOnReturn = sf.caller ?
         computeMinDistToUncovered(sf.caller, minDistAtRA) : 0;
+#endif
     }
   }
 }
@@ -429,10 +455,18 @@ void StatsTracker::updateStateStatistics(uint64_t addend) {
   for (std::set<ExecutionState*>::iterator it = executor.states.begin(),
          ie = executor.states.end(); it != ie; ++it) {
     ExecutionState &state = **it;
+#if MULTITHREAD
+	const InstructionInfo &ii = *state.pc()->info;
+#else
     const InstructionInfo &ii = *state.pc->info;
+#endif
     theStatisticManager->incrementIndexedValue(stats::states, ii.id, addend);
     if (UseCallPaths)
-      state.stack.back().callPathNode->statistics.incrementValue(stats::states, addend);
+#if MULTITHREAD
+	  state.stack().back().callPathNode->statistics.incrementValue(stats::states, addend);
+#else
+	  state.stack.back().callPathNode->statistics.incrementValue(stats::states, addend);
+#endif
   }
 }
 
@@ -853,13 +887,22 @@ void StatsTracker::computeReachableUncovered() {
          ie = executor.states.end(); it != ie; ++it) {
     ExecutionState *es = *it;
     uint64_t currentFrameMinDist = 0;
-    for (ExecutionState::stack_ty::iterator sfIt = es->stack.begin(),
+#if MULTITHREAD
+	for (Thread::stack_ty::iterator sfIt = es->stack().begin(),
+				sf_ie = es->stack().end(); sfIt != sf_ie; ++sfIt) {
+		Thread::stack_ty::iterator next = sfIt + 1;
+		KInstIterator kii;
+		if (next==es->stack().end()) {
+			kii = es->pc();
+#else
+	for (ExecutionState::stack_ty::iterator sfIt = es->stack.begin(),
            sf_ie = es->stack.end(); sfIt != sf_ie; ++sfIt) {
       ExecutionState::stack_ty::iterator next = sfIt + 1;
       KInstIterator kii;
 
       if (next==es->stack.end()) {
         kii = es->pc;
+#endif
       } else {
         kii = next->caller;
         ++kii;
