@@ -41,10 +41,10 @@
 #include <klee/klee.h>
 
 /*** Forward to actual implementations ***/
-
+#if 0
 int open(const char *pathname, int flags, ...) {
   mode_t mode = 0;
-  
+ klee_warning("I am here in real 64 open"); 
   if (flags & O_CREAT) {
     /* get mode */
     va_list ap;
@@ -112,3 +112,4 @@ int getdents64(unsigned int fd, struct dirent *dirp, unsigned int count) {
 }
 int __getdents64(unsigned int fd, struct dirent *dirp, unsigned int count)
      __attribute__((alias("getdents64")));
+#endif

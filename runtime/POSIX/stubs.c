@@ -77,7 +77,7 @@ extern int __fputc_unlocked(int c, FILE *f);
 
 int __socketcall(int type, int *args) __attribute__((weak));
 int __socketcall(int type, int *args) {
-  klee_warning("ignoring (EAFNOSUPPORT)");
+  klee_warning("__socket call ignoring (EAFNOSUPPORT)");
   errno = EAFNOSUPPORT;
   return -1;
 }
@@ -539,14 +539,14 @@ void *mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset
 void *mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset) {
   klee_warning("ignoring (EPERM)");
   errno = EPERM;
-  return (void*) -1;
+  return  malloc(length);
 }
 
 void *mmap64(void *start, size_t length, int prot, int flags, int fd, off64_t offset) __attribute__((weak));
 void *mmap64(void *start, size_t length, int prot, int flags, int fd, off64_t offset) {
   klee_warning("ignoring (EPERM)");
-  errno = EPERM;
-  return (void*) -1;
+ // errno = EPERM;
+  return malloc(length);
 }
 
 int munmap(void*start, size_t length) __attribute__((weak));

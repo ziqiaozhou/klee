@@ -35,8 +35,9 @@ extern "C" {
    * output files, etc.
    */
   void klee_make_symbolic(void *addr, size_t nbytes, const char *name);
-
-  void klee_make_secret(void *addr, size_t nbytes, const char *name);
+void klee_make_shared(void *addr, size_t nbytes);
+void klee_make_secret(void *addr, size_t nbytes, const char *name);
+void klee_make_observable(const char *msg,...);
   /* klee_range - Construct a symbolic value in the signed interval
    * [begin,end).
    *
@@ -81,7 +82,7 @@ extern "C" {
   
   /* print the tree associated w/ a given expression. */
   void klee_print_expr(const char *msg, ...);
-void klee_make_observable(const char *msg,...); 
+  
   /* NB: this *does not* fork n times and return [0,n) in children.
    * It makes n be symbolic and returns: caller must compare N times.
    */
@@ -155,6 +156,33 @@ void klee_make_observable(const char *msg,...);
 
   /* Merge current states together if possible */
   void klee_merge();
+
+  /* Create a new thread */
+  void klee_thread_create(uint64_t tid, void *(*start_routine)(void*), void *arg);
+
+  /* Terminate current thread */
+  void klee_thread_terminate() __attribute__ ((__noreturn__));
+
+  /* Retrieve thread id of current thread */
+  void klee_get_context(uint64_t *tid);
+
+  /* Obtain waiting list id, where current thread is blocked */
+  uint64_t klee_get_wlist(void);
+
+  /* Preempt current thread. If yield is true, the current thread is not rescheduled. */
+  void klee_thread_preempt(int yield);
+
+  /* Block current thread in the specified waiting list */
+  void klee_thread_sleep(uint64_t wlist);
+
+  /* Enable one or all threads in the specified waiting list */
+  void klee_thread_notify(uint64_t wlist, int all);
+
+  /* Get current time */
+  uint64_t klee_get_time(void);
+
+  /* Set current time */
+  void klee_set_time(uint64_t value);
 #ifdef __cplusplus
 }
 #endif
