@@ -2027,34 +2027,39 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
 	  break;
 
 	if (isa<InlineAsm>(fp)) {
-
-
 		InlineAsm* fpAsm = dyn_cast<InlineAsm>(fp);
-			const llvm::Type* fpAsmRetType =
+		const llvm::Type* fpAsmRetType =
 			fpAsm->getFunctionType()->getReturnType();
 
+	//	klee_warning(" asm %s in %s,%s,%s",fpAsm->getAsmString().c_str(),i->getName().str().c_str(),i->getParent()->getName().str().c_str(),i->getParent()->getParent()->getName().str().c_str());
 		// if the inline assembly returns an aggregate type (components
 		//         // must be extracted later with 'getresult' instruction), don't
 		//                 // do anything yet, and handle later when handling getresult
 		//                         // instruction - this is only for primitive returned types
 		//                                 //
 		//                                         // (also don't do anything if it returns a void type, obviously)
-	
-			if(fpAsm->getAsmString().empty()||fpAsm->getAsmString()=="syscall" ){
+		std::string s= fpAsm->getAsmString();
+		s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+						std::not1(std::ptr_fun<int, int>(std::isspace))));
+
+			klee_warning("test symbolic asm %s, length=%d in %s,%s,%s",fpAsm->getAsmString().c_str(),s.length(),i->getName().str().c_str(),i->getParent()->getName().str().c_str(),i->getParent()->getParent()->getName().str().c_str());
+		if(fpAsm->getAsmString().empty()||s.empty()||s.length()<2||fpAsm->getAsmString()=="syscall" ){
+			klee_warning("skip asm %s,trimed=%s in %s,%s,%s",fpAsm->getAsmString().c_str(),s.c_str(),i->getName().str().c_str(),i->getParent()->getName().str().c_str(),i->getParent()->getParent()->getName().str().c_str());
+
 			break;
 		}
 		if ((fpAsmRetType->getTypeID() != llvm::Type::VoidTyID) &&
 					(fpAsmRetType->getTypeID() != llvm::Type::StructTyID)) {
-	klee_warning("symbolic asm %s in %s,%s,%s",fpAsm->getAsmString().c_str(),i->getName().str().c_str(),i->getParent()->getName().str().c_str(),i->getParent()->getParent()->getName().str().c_str());
+			klee_warning("invalid symbolic asm %s, length=%d in %s,%s,%s",fpAsm->getAsmString().c_str(),s.length(),i->getName().str().c_str(),i->getParent()->getName().str().c_str(),i->getParent()->getParent()->getName().str().c_str());
 
 			//                                                                       // allocate an MO of the same size as the returned value:
-			Expr::Width width_in_bits =
-				getWidthForLLVMType(fpAsm->getFunctionType()->getReturnType());
-			uint64_t width_in_bytes = width_in_bits / 8;
+			/*		Expr::Width width_in_bits =
+					getWidthForLLVMType(fpAsm->getFunctionType()->getReturnType());
+					uint64_t width_in_bytes = width_in_bits / 8;
 			//                                                                                                     // allocate a new block of memory
 			MemoryObject *mo = memory->allocate(width_in_bytes, false, false, 0);
 			// 
-			
+
 			executeMakeSymbolic(state, mo,fpAsm->getAsmString().c_str());
 
 			//                                                                                                                                             // bind it in your current state's address space
@@ -2064,10 +2069,15 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
 			// bind that READ as the result
 			bindLocal(ki, state, ucRead);
 
+
+
+			klee_warning("symbolized a assembly %s",fpAsm->getAsmString().c_str());*/
+
+			printFileLine(state, state.pc, llvm::errs());
+			terminateStateOnExecError(state, "inline assembly is unsupported");
 		}
-	
-klee_warning("symbolized a assembly %s",fpAsm->getAsmString().c_str());
-		//	terminateStateOnExecError(state, "inline assembly is unsupported");
+
+		printFileLine(state, state.pc, llvm::errs());
 		break;
 	}
 	// evaluate arguments
@@ -2968,7 +2978,7 @@ void Executor::checkMemoryUsage() {
     }
   }
 }
-
+static int count_stop=0;
 void Executor::run(ExecutionState &initialState) {
   
 klee_warning("start bind constant");
@@ -3011,7 +3021,7 @@ klee_warning("end bind constant");
       processTimers(&state, MaxInstructionTime * numSeeds);
       updateStates(&state);
 
-      if ((stats::instructions % 000) == 0) {
+      if ((stats::instructions % 1000) == 0) {
         int numSeeds = 0, numStates = 0;
         for (std::map<ExecutionState*, std::vector<SeedInfo> >::iterator
                it = seedMap.begin(), ie = seedMap.end();
@@ -3053,16 +3063,15 @@ klee_warning("end bind constant");
   searcher->update(0, states, std::set<ExecutionState*>());
 
   while (!states.empty() && !haltExecution) {
-    ExecutionState &state = searcher->selectState();
+	  ExecutionState &state = searcher->selectState();
 #if MULTITHREAD
-	KInstruction *ki = state.pc();
+	  KInstruction *ki = state.pc();
 #else
-	KInstruction *ki = state.pc;
+	  KInstruction *ki = state.pc;
 #endif
-    stepInstruction(state);
-
-    executeInstruction(state, ki);
-    processTimers(&state, MaxInstructionTime);
+	  stepInstruction(state);
+	  executeInstruction(state, ki);
+	  processTimers(&state, MaxInstructionTime);
 
     checkMemoryUsage();
 

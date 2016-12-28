@@ -15,13 +15,17 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include<iostream>
 #include <map>
 #include <vector>
 
 using namespace klee;
 
 namespace {
-  llvm::cl::opt<bool>
+//  llvm::cl::opt<bool>
+//  AvoidBindings("avoid-bindings", llvm::cl::init(false));
+
+	llvm::cl::opt<bool>
   PCWidthAsArg("pc-width-as-arg", llvm::cl::init(true));
 
   llvm::cl::opt<bool>
@@ -40,15 +44,16 @@ namespace {
 class PPrinter : public ExprPPrinter {
 public:
   std::set<const Array*> usedArrays;
+ static unsigned counter;
+  static unsigned updateCounter;
+
 private:
   std::map<ref<Expr>, unsigned> bindings;
   std::map<const UpdateNode*, unsigned> updateBindings;
   std::set< ref<Expr> > couldPrint, shouldPrint;
   std::set<const UpdateNode*> couldPrintUpdates, shouldPrintUpdates;
   llvm::raw_ostream &os;
-  unsigned counter;
-  unsigned updateCounter;
-  bool hasScan;
+   bool hasScan;
   bool forceNoLineBreaks;
   std::string newline;
 
@@ -154,12 +159,12 @@ void printType(SymbolType type,PrintContext* PC){
       // We are done if we hit the cache.
       std::map<const UpdateNode*, unsigned>::iterator it = 
         updateBindings.find(un);
-      if (it!=updateBindings.end()) {
+      if ((it!=updateBindings.end() )&& (!AvoidBindings)) {
         if (openedList)
           PC << "] @ ";
         PC << "U" << it->second;
         return;
-      } else if (!hasScan || shouldPrintUpdates.count(un)) {
+      } else if ((!hasScan || shouldPrintUpdates.count(un)) && (!AvoidBindings)) {
         if (openedList)
           PC << "] @";
         if (un != head)
@@ -325,8 +330,8 @@ public:
   }
 
   void reset() {
-    counter = 0;
-    updateCounter = 0;
+    //counter = 0;
+    //updateCounter = 0;
     hasScan = false;
     forceNoLineBreaks = false;
     bindings.clear();
@@ -377,10 +382,10 @@ public:
       printConst(CE, PC, printConstWidth);
     else {
       std::map<ref<Expr>, unsigned>::iterator it = bindings.find(e);
-      if (it!=bindings.end()) {
+      if (it!=bindings.end() &&(!AvoidBindings)) {
         PC << 'N' << it->second;
       } else {
-        if (!hasScan || shouldPrint.count(e)) {
+        if ((!hasScan || shouldPrint.count(e)) &&(!AvoidBindings)) {
           PC << 'N' << counter << ':';
           bindings.insert(std::make_pair(e, counter++));
         }
@@ -388,56 +393,58 @@ public:
         // Detect multibyte reads.
         // FIXME: Hrm. One problem with doing this is that we are
         // masking the sharing of the indices which aren't
-        // visible. Need to think if this matters... probably not
-        // because if they are offset reads then its either constant,
-        // or they are (base + offset) and base will get printed with
-        // a declaration.
-        if (PCMultibyteReads && e->getKind() == Expr::Concat) {
-	  const ReadExpr *base = hasOrderedReads(e, -1);
-	  int isLSB = (base != NULL);
-	  if (!isLSB)
-	    base = hasOrderedReads(e, 1);
-	  if (base) {
-	    PC << "(Read" << (isLSB ? "LSB" : "MSB");
-	    printWidth(PC, e);
-	    PC << ' ';
-	    printRead(base, PC, PC.pos);
-	    printType(base->updates.root->type,&PC);
-		PC << ')';
-	    return;
-	  }
-        }
+		// visible. Need to think if this matters... probably not
+		// because if they are offset reads then its either constant,
+		// or they are (base + offset) and base will get printed with
+		// a declaration.
+		if (PCMultibyteReads && e->getKind() == Expr::Concat) {
+			const ReadExpr *base = hasOrderedReads(e, -1);
+			int isLSB = (base != NULL);
+			if (!isLSB)
+			  base = hasOrderedReads(e, 1);
+			if (base) {
+				PC << "(Read" << (isLSB ? "LSB" : "MSB");
+				printWidth(PC, e);
+				PC << ' ';
+				printRead(base, PC, PC.pos);
+				printType(base->updates.root->type,&PC);
+				PC << ')';
+				return;
+			}
+		}
 
-	PC << '(' << e->getKind();
-        printWidth(PC, e);
-        PC << ' ';
+		PC << '(' << e->getKind();
+		printWidth(PC, e);
+		PC << ' ';
 
-        // Indent at first argument and dispatch to appropriate print
-        // routine for exprs which require special handling.
-        unsigned indent = PC.pos;
-        if (const ReadExpr *re = dyn_cast<ReadExpr>(e)) {
-          printRead(re, PC, indent);
-        } else if (const ExtractExpr *ee = dyn_cast<ExtractExpr>(e)) {
+		// Indent at first argument and dispatch to appropriate print
+		// routine for exprs which require special handling.
+		unsigned indent = PC.pos;
+		if (const ReadExpr *re = dyn_cast<ReadExpr>(e)) {
+			printRead(re, PC, indent);
+		} else if (const ExtractExpr *ee = dyn_cast<ExtractExpr>(e)) {
 			printExtract(ee, PC, indent);
 		} else if (e->getKind() == Expr::Concat || e->getKind() == Expr::SExt)
 		  printExpr(e.get(), PC, indent, true);
 		else
 		  printExpr(e.get(), PC, indent);	
-        PC << ")";
-      }
-    }
+		PC << ")";
+	  }
+	}
   }
 
-  /* Public utility functions */
+/* Public utility functions */
 
-  void printSeparator(PrintContext &PC, bool simple, unsigned indent) {
-    if (simple || forceNoLineBreaks) {
-      PC << ' ';
+void printSeparator(PrintContext &PC, bool simple, unsigned indent) {
+	if (simple || forceNoLineBreaks) {
+		PC << ' ';
     } else {
       PC.breakLine(indent);
     }
   }
 };
+unsigned PPrinter::counter=0;
+unsigned PPrinter::updateCounter=0;
 
 ExprPPrinter *klee::ExprPPrinter::create(llvm::raw_ostream &os) {
   return new PPrinter(os);
@@ -460,11 +467,12 @@ void ExprPPrinter::printOne(llvm::raw_ostream &os,
 void ExprPPrinter::printSingleExpr(llvm::raw_ostream &os, const ref<Expr> &e) {
   PPrinter p(os);
   p.scan(e);
-
   // FIXME: Need to figure out what to do here. Probably print as a
   // "forward declaration" with whatever syntax we pick for that.
+  //AvoidBindings=true;
   PrintContext PC(os);
   p.print(e, PC);
+  //AvoidBindings=false;
 }
  void ExprPPrinter::printAnalyzedConstraints(llvm::raw_ostream &os,
                                     const ConstraintManager &constraints) {

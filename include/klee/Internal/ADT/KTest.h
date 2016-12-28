@@ -35,6 +35,11 @@ extern "C" {
 
     unsigned numObjects;
     KTestObject *objects;
+#if MULTITHREAD
+	/*thread*/
+	unsigned numSchedSteps;
+	unsigned long *schedSteps;
+#endif
   };
 
   
