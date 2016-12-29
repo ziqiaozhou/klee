@@ -1055,7 +1055,22 @@ struct net original_init_net;
 			 __setup_end[128],__initcall_start[128],__initcall0_start[128],__initramfs_start[128],__brk_limit[128],__bss_stop[128],__brk_base[128],__iommu_table[128],__iommu_table_end[128];
 		struct alt_instr __alt_instructions[8],__alt_instructions_end[8];
 		*/
-static void faked_sk_free(struct sock* sk){
+int faked_tcp_try_rmem_schedule(struct sock *sk, struct sk_buff *skb, unsigned int size){
+	return 0;
+}
+void faked_tcp_rcv_space_adjust(struct sock *sk){
+}
+int faked_skb_copy_datagram_iovec(const struct sk_buff *skb, int offset,  struct iovec *to, int len){
+	return 0;
+}
+int faked_skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len){
+	return 0;
+}
+void faked_dst_release(struct dst_entry *dst){
+}
+void faked_inet_csk_destroy_sock(struct sock *sk){
+}
+ void faked_sk_free(struct sock* sk){
 }
 static void faked_unhash(struct sock * sk){
 }
@@ -1502,6 +1517,7 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 			klee_alias_function("tcp_sendmsg","faked_tcp_sendmsg");
 			klee_alias_function("do_tcp_sendpages","faked_do_tcp_sendpages");
 			klee_alias_function("tcp_send_ack","faked_tcp_send_ack");
+			klee_alias_function("sk_free","faked_sk_free");
 			klee_alias_function("tcp_current_mss","faked_tcp_current_mss");
 			klee_alias_function("tcp_check_space","faked_tcp_check_space");
 			klee_alias_function("__tcp_v4_send_check","faked___tcp_v4_send_check");
@@ -1509,9 +1525,16 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 			klee_alias_function("tcp_mark_head_lost","faked_tcp_mark_head_lost");
 			klee_alias_function("reqsk_fastopen_remove","faked_reqsk_fastopen_remove");
 			klee_alias_function("inet_put_port","faked_inet_put_port");
-			klee_alias_function("sk_free","faked_sk_free");
-			cur=(struct thread_info *)malloc0(sizeof(struct thread_info));
+			klee_alias_function("inet_csk_destroy_sock","faked_inet_csk_destroy_sock");
 			
+			klee_alias_function("skb_copy_datagram_iovec","faked_skb_copy_datagram_iovec");
+			klee_alias_function("tcp_rcv_space_adjust","faked_tcp_rcv_space_adjust");
+			klee_alias_function("skb_copy_bits","faked_skb_copy_bits");
+			klee_alias_function("dst_release","faked_dst_release");
+			
+			klee_alias_function("tcp_try_rmem_schedule","faked_tcp_try_rmem_schedule");
+			cur=(struct thread_info *)malloc0(sizeof(struct thread_info));
+
 			struct task_struct  * task=(struct task_struct*)malloc0(sizeof( struct task_struct));
 			klee_make_symbolic(task,sizeof(struct task_struct),"curr_task");
 			klee_make_symbolic(cur,sizeof(struct thread_info),"thread_info");
@@ -1814,7 +1837,9 @@ int tcp_main()//(int argc,char** argv)
 		klee_assume(inflight<tk->snd_ssthresh);
 		klee_assume(skb->len>= (th->doff << 2));
 	klee_assume(TCP_SKB_CB(skb)->seq == tk->rcv_nxt);
-	klee_assume(after(TCP_SKB_CB(skb)->ack_seq, tk->snd_nxt));
+	klee_assume(!after(TCP_SKB_CB(skb)->ack_seq, tk->snd_nxt));
+	u32 offset2=tk->urg_seq-ntohl(th->seq)+th->doff*4-th->syn;
+	klee_assume(offset2<skb->len);
 	tcp_rcv_established(tk,skb,th,skb->len);
 	int i=0;
 	printf("test---result---------------");
