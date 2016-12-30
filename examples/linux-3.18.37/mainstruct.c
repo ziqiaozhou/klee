@@ -846,9 +846,9 @@ struct net original_init_net;
 			skb_set_mac_header(skb, 0);
 			skb_set_network_header(skb, skb->len);
 			iph = (struct iphdr *) skb_put(skb, sizeof(struct iphdr));
-
+			unsigned int optionsize=40;
 			skb_set_transport_header(skb, skb->len);
-			tcph = (struct tcphdr *) skb_put(skb, sizeof(struct tcphdr));
+			tcph = (struct tcphdr *) skb_put(skb, sizeof(struct tcphdr)+optionsize);
 			skb_set_queue_mapping(skb, queue_map);
 			skb->priority = pkt_dev->skb_priority;
 
@@ -1055,6 +1055,136 @@ struct net original_init_net;
 			 __setup_end[128],__initcall_start[128],__initcall0_start[128],__initramfs_start[128],__brk_limit[128],__bss_stop[128],__brk_base[128],__iommu_table[128],__iommu_table_end[128];
 		struct alt_instr __alt_instructions[8],__alt_instructions_end[8];
 		*/
+
+ void faked_tcp_grow_window(struct sock *sk, const struct sk_buff *skb)
+{
+	struct tcp_sock *tp = tcp_sk(sk);
+
+	/* Check #1 */
+}
+
+void faked_tcp_parse_options(const struct sk_buff *skb,
+		       struct tcp_options_received *opt_rx, int estab,
+		       struct tcp_fastopen_cookie *foc)
+{
+	const unsigned char *ptr;
+	const struct tcphdr *th = tcp_hdr(skb);
+	int length = (th->doff * 4) - sizeof(struct tcphdr);
+
+	ptr = (const unsigned char *)(th + 1);
+	opt_rx->saw_tstamp = 0;
+
+	while (length > 0) {
+		int opcode = *ptr++;
+		int opsize;
+
+		switch (opcode) {
+		case TCPOPT_EOL:
+			return;
+		case TCPOPT_NOP:	/* Ref: RFC 793 section 3.1 */
+			length--;
+			continue;
+		default:
+			opsize = *ptr++;
+			klee_assume(opsize>=2);
+			klee_assume(opsize<=length);
+			klee_assume(opcode<=5);
+			klee_assume(opcode>=0);
+			if (opsize < 2) /* "silly options" */
+				return;
+			if (opsize > length)
+				return;	/* don't parse partial options */
+			switch (opcode) {
+			case TCPOPT_MSS:
+				klee_assume(opsize == TCPOLEN_MSS && th->syn && !estab);
+				if (opsize == TCPOLEN_MSS && th->syn && !estab) {
+					u16 in_mss = get_unaligned_be16(ptr);
+					if (in_mss) {
+						if (opt_rx->user_mss &&
+						    opt_rx->user_mss < in_mss)
+							in_mss = opt_rx->user_mss;
+						opt_rx->mss_clamp = in_mss;
+					}
+				}
+				break;
+			case TCPOPT_WINDOW:
+				klee_assume(opsize == TCPOLEN_WINDOW && th->syn &&
+				    !estab && sysctl_tcp_window_scaling);
+				if (opsize == TCPOLEN_WINDOW && th->syn &&
+				    !estab && sysctl_tcp_window_scaling) {
+					__u8 snd_wscale = *(__u8 *)ptr;
+					opt_rx->wscale_ok = 1;
+					if (snd_wscale > 14) {
+						klee_make_observable("(ReadLSB w32 0 snd_wscale)",snd_wscale);
+						snd_wscale = 14;
+					}
+					opt_rx->snd_wscale = snd_wscale;
+				}
+				break;
+			case TCPOPT_TIMESTAMP:
+				klee_assume((opsize == TCPOLEN_TIMESTAMP) &&
+				    ((estab && opt_rx->tstamp_ok) ||
+				     (!estab && sysctl_tcp_timestamps)));
+				if ((opsize == TCPOLEN_TIMESTAMP) &&
+				    ((estab && opt_rx->tstamp_ok) ||
+				     (!estab && sysctl_tcp_timestamps))) {
+					opt_rx->saw_tstamp = 1;
+					opt_rx->rcv_tsval = get_unaligned_be32(ptr);
+					opt_rx->rcv_tsecr = get_unaligned_be32(ptr + 4);
+				}
+				break;
+			case TCPOPT_SACK_PERM:
+				klee_assume(opsize == TCPOLEN_SACK_PERM && th->syn &&
+				    !estab && sysctl_tcp_sack);
+				if (opsize == TCPOLEN_SACK_PERM && th->syn &&
+				    !estab && sysctl_tcp_sack) {
+					opt_rx->sack_ok = TCP_SACK_SEEN;
+					tcp_sack_reset(opt_rx);
+				}
+				break;
+
+			case TCPOPT_SACK:
+				klee_assume((opsize >= (TCPOLEN_SACK_BASE + TCPOLEN_SACK_PERBLOCK)) &&
+				   !((opsize - TCPOLEN_SACK_BASE) % TCPOLEN_SACK_PERBLOCK) &&
+				   opt_rx->sack_ok);
+				if ((opsize >= (TCPOLEN_SACK_BASE + TCPOLEN_SACK_PERBLOCK)) &&
+				   !((opsize - TCPOLEN_SACK_BASE) % TCPOLEN_SACK_PERBLOCK) &&
+				   opt_rx->sack_ok) {
+					TCP_SKB_CB(skb)->sacked = (ptr - 2) - (unsigned char *)th;
+				}
+				break;
+#ifdef CONFIG_TCP_MD5SIG
+			case TCPOPT_MD5SIG:
+				/*
+				 * The MD5 Hash has already been
+				 * checked (see tcp_v{4,6}_do_rcv()).
+				 */
+				break;
+#endif
+			case TCPOPT_EXP:
+				/* Fast Open option shares code 254 using a
+				 * 16 bits magic number. It's valid only in
+				 * SYN or SYN-ACK with an even size.
+				 */
+				if (opsize < TCPOLEN_EXP_FASTOPEN_BASE ||
+				    get_unaligned_be16(ptr) != TCPOPT_FASTOPEN_MAGIC ||
+				    foc == NULL || !th->syn || (opsize & 1))
+					break;
+				foc->len = opsize - TCPOLEN_EXP_FASTOPEN_BASE;
+				if (foc->len >= TCP_FASTOPEN_COOKIE_MIN &&
+				    foc->len <= TCP_FASTOPEN_COOKIE_MAX)
+					memcpy(foc->val, ptr + 2, foc->len);
+				else if (foc->len != 0)
+					foc->len = -1;
+				break;
+
+			}
+			ptr += opsize-2;
+			length -= opsize;
+		}
+	}
+}
+
 int faked_tcp_try_rmem_schedule(struct sock *sk, struct sk_buff *skb, unsigned int size){
 	return 0;
 }
@@ -1396,6 +1526,7 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 	int faked_register_pernet_subsys(struct pernet_operations *ops){
 		return 0;
 	}
+
 	struct tcp_out_options {
 		u16 options;		/* bit field of OPTION_* */
 		u16 mss;		/* 0 to disable */
@@ -1531,7 +1662,8 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 			klee_alias_function("tcp_rcv_space_adjust","faked_tcp_rcv_space_adjust");
 			klee_alias_function("skb_copy_bits","faked_skb_copy_bits");
 			klee_alias_function("dst_release","faked_dst_release");
-			
+			klee_alias_function("tcp_grow_window","faked_tcp_grow_window");
+			klee_alias_function("tcp_parse_options","faked_tcp_parse_options");
 			klee_alias_function("tcp_try_rmem_schedule","faked_tcp_try_rmem_schedule");
 			cur=(struct thread_info *)malloc0(sizeof(struct thread_info));
 
@@ -1561,8 +1693,7 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 		sock->file=NULL;
 		sock->state=SS_CONNECTED;
 		sock->ops=&inet_stream_ops;
-	sk->sk_socket=sock;
-
+		sk->sk_socket=sock;
 		skb_queue_head_init(&sk->sk_receive_queue);
 		skb_queue_head_init(&sk->sk_write_queue);
 		skb_queue_head_init(&sk->sk_error_queue);
@@ -1661,18 +1792,23 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 		memcpy(skb->cb,cb,48);
 		TCP_SKB_CB(skb)->sacked =false;
 		struct tcphdr  th;
+		unsigned char options[40];
 		klee_make_symbolic(&th,sizeof(th),"sk->th");
+
+		klee_make_symbolic(&options,40,"options");
 		symbol_define((&th),seq,__be32,"th->seq")
 			symbol_define((&th),source,__be16,"th->source")
 			symbol_define((&th),dest,__be16,"th->dest")
 
 			symbol_define((&th),window,__be16,"th->window")
-		th.syn=1;
-		th.cwr=0;
-		th.ece=0;
-			th.check=0;
-		memcpy(skb_transport_header(skb),&th,sizeof(th));
-
+			//th.syn=1;
+		klee_assume(th.cwr==0);
+		klee_assume(th.ece==0);
+		th.check=0;
+		options[39]=0;
+		struct tcphdr * tcpth= skb_transport_header(skb);
+		memcpy(tcpth,&th,sizeof(th));
+		memcpy(tcpth+1,&options,40);
 		tcp_prot.init(sk);
 		init_sock2(sk);
 		skb_queue_head(&sk->sk_write_queue,skb);
@@ -1836,10 +1972,12 @@ int tcp_main()//(int argc,char** argv)
 		unsigned int inflight=tcp_packets_in_flight(tk);
 		klee_assume(inflight<tk->snd_ssthresh);
 		klee_assume(skb->len>= (th->doff << 2));
-	klee_assume(TCP_SKB_CB(skb)->seq == tk->rcv_nxt);
-	klee_assume(!after(TCP_SKB_CB(skb)->ack_seq, tk->snd_nxt));
+	klee_assume(TCP_SKB_CB(skb)->seq != tk->rcv_nxt);
+//	klee_assume(!after(TCP_SKB_CB(skb)->ack_seq, tk->snd_nxt));
 	u32 offset2=tk->urg_seq-ntohl(th->seq)+th->doff*4-th->syn;
 	klee_assume(offset2<skb->len);
+	klee_assume(th->doff<15);
+	klee_assume(th->doff>5);
 	tcp_rcv_established(tk,skb,th,skb->len);
 	int i=0;
 	printf("test---result---------------");
