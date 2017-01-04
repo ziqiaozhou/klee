@@ -1055,6 +1055,143 @@ struct net original_init_net;
 			 __setup_end[128],__initcall_start[128],__initcall0_start[128],__initramfs_start[128],__brk_limit[128],__bss_stop[128],__brk_base[128],__iommu_table[128],__iommu_table_end[128];
 		struct alt_instr __alt_instructions[8],__alt_instructions_end[8];
 		*/
+ static inline bool faked_tcp_may_update_window(const struct tcp_sock *tp,
+					const u32 ack, const u32 ack_seq,
+					const u32 nwin)
+{
+	return	after(ack, tp->snd_una) ||
+		after(ack_seq, tp->snd_wl1) ||
+		(ack_seq == tp->snd_wl1 && nwin > tp->snd_wnd);
+}
+static inline void faked_tcp_update_wl(struct tcp_sock *tp, u32 seq)
+{
+	tp->snd_wl1 = seq;
+}
+int faked_tcp_ack_update_window(struct sock *sk, const struct sk_buff *skb, u32 ack,
+				 u32 ack_seq)
+{
+
+#define FLAG_WIN_UPDATE		0x02 /* Incoming ACK was a window update.	*/
+	struct tcp_sock *tp = tcp_sk(sk);
+	int flag = 0;
+	u32 nwin = ntohs(tcp_hdr(skb)->window);
+
+	if (likely(!tcp_hdr(skb)->syn))
+		nwin <<= tp->rx_opt.snd_wscale;
+
+	if (faked_tcp_may_update_window(tp, ack, ack_seq, nwin)) {
+		flag |= FLAG_WIN_UPDATE;
+		faked_tcp_update_wl(tp, ack_seq);
+		klee_assume(tp->snd_wnd!=nwin);
+		if (tp->snd_wnd != nwin) {
+			tp->snd_wnd = nwin;
+
+			/* Note, it is the only place, where
+			 * fast path is recovered for sending TCP.
+			 */
+			tp->pred_flags = 0;
+			//tcp_fast_path_check(sk);
+
+			if (nwin > tp->max_window) {
+				tp->max_window = nwin;
+				tcp_sync_mss(sk, inet_csk(sk)->icsk_pmtu_cookie);
+			}
+		}
+	}
+
+	tp->snd_una = ack;
+
+	return flag;
+}
+
+bool tcp_checksum_complete_user(struct sock *sk,
+					     struct sk_buff *skb)
+{
+	return false;
+}
+void faked_tcp_event_data_recv(struct sock* sk,struct sk_buff* skb){
+}
+u32 faked___tcp_select_window(struct sock *sk)
+{
+	struct inet_connection_sock *icsk = inet_csk(sk);
+	struct tcp_sock *tp = tcp_sk(sk);
+	/* MSS for the peer's data.  Previous versions used mss_clamp
+	 * here.  I don't know if the value based on our guesses
+	 * of peer's MSS is better for the performance.  It's more correct
+	 * but may be worse for the performance because of rcv_mss
+	 * fluctuations.  --SAW  1998/11/1
+	 */
+	int mss = icsk->icsk_ack.rcv_mss;
+	int free_space = tcp_space(sk);
+	int allowed_space = tcp_full_space(sk);
+	int full_space = min_t(int, tp->window_clamp, allowed_space);
+	int window;
+	klee_assume(mss<=full_space);
+	klee_assume(free_space >= (full_space >> 1));
+	klee_assume(free_space > tp->rcv_ssthresh);
+	if (mss > full_space)
+	  mss = full_space;
+
+	if (free_space < (full_space >> 1)) {
+		icsk->icsk_ack.quick = 0;
+
+		if (sk_under_memory_pressure(sk))
+		  tp->rcv_ssthresh = min(tp->rcv_ssthresh,
+					  4U * tp->advmss);
+
+		/* free_space might become our new window, make sure we don't
+		 * increase it due to wscale.
+		 */
+		free_space = round_down(free_space, 1 << tp->rx_opt.rcv_wscale);
+
+		/* if free space is less than mss estimate, or is below 1/16th
+		 * of the maximum allowed, try to move to zero-window, else
+		 * tcp_clamp_window() will grow rcv buf up to tcp_rmem[2], and
+		 * new incoming data is dropped due to memory limits.
+		 * With large window, mss test triggers way too late in order
+		 * to announce zero window in time before rmem limit kicks in.
+		 */
+		if (free_space < (allowed_space >> 4) || free_space < mss)
+			return 0;
+	}
+
+	if (free_space > tp->rcv_ssthresh)
+		free_space = tp->rcv_ssthresh;
+
+	/* Don't do rounding if we are using window scaling, since the
+	 * scaled window will not line up with the MSS boundary anyway.
+	 */
+	window = tp->rcv_wnd;
+	klee_assume(tp->rx_opt.rcv_wscale==0);
+klee_assume (window <= free_space - mss || window > free_space);
+	if (tp->rx_opt.rcv_wscale) {
+		window = free_space;
+
+		/* Advertise enough space so that it won't get scaled away.
+		 * Import case: prevent zero window announcement if
+		 * 1<<rcv_wscale > mss.
+		 */
+		if (((window >> tp->rx_opt.rcv_wscale) << tp->rx_opt.rcv_wscale) != window)
+			window = (((window >> tp->rx_opt.rcv_wscale) + 1)
+				  << tp->rx_opt.rcv_wscale);
+	} else {
+		/* Get the largest window that is a nice multiple of mss.
+		 * Window clamp already applied above.
+		 * If our current window offering is within 1 mss of the
+		 * free space we just keep it. This prevents the divide
+		 * and multiply from happening most of the time.
+		 * We also don't do any window rounding when the free space
+		 * is too small.
+		 */
+		if (window <= free_space - mss || window > free_space)
+			window = (free_space / mss) * mss;
+		else if (mss == full_space &&
+			 free_space > window + (full_space >> 1))
+			window = free_space;
+	}
+
+	return window;
+}
 
  void faked_tcp_grow_window(struct sock *sk, const struct sk_buff *skb)
 {
@@ -1070,33 +1207,47 @@ void faked_tcp_parse_options(const struct sk_buff *skb,
 	const unsigned char *ptr;
 	const struct tcphdr *th = tcp_hdr(skb);
 	int length = (th->doff * 4) - sizeof(struct tcphdr);
-
+	int counter=0;
 	ptr = (const unsigned char *)(th + 1);
 	opt_rx->saw_tstamp = 0;
-
-	while (length > 0) {
+	
+	while (counter<7) {
 		int opcode = *ptr++;
 		int opsize;
-
-		switch (opcode) {
-		case TCPOPT_EOL:
+	//	klee_assume(opt_rx->sack_ok==0);
+		klee_assume(opcode>1);
+		if(!th->syn){
+			opsize = *ptr++;
+			klee_assume((opsize == TCPOLEN_TIMESTAMP) && (estab && opt_rx->tstamp_ok));
+			if ((opsize == TCPOLEN_TIMESTAMP) &&
+						((estab && opt_rx->tstamp_ok) ||
+						 (!estab && sysctl_tcp_timestamps))) {
+				opt_rx->saw_tstamp = 1;
+				opt_rx->rcv_tsval = get_unaligned_be32(ptr);
+				opt_rx->rcv_tsecr = get_unaligned_be32(ptr + 4);
+			}
 			return;
-		case TCPOPT_NOP:	/* Ref: RFC 793 section 3.1 */
-			length--;
+		}
+		klee_warning("before assume opcode");
+		klee_assume(opcode==(TCPOPT_MSS+counter));
+		klee_warning("assume opcode");
+		counter++;
+		if(counter==2){
+			counter=6;
+		}
+		switch (opcode) {
+			case TCPOPT_EOL:
+				return;
+			case TCPOPT_NOP:	/* Ref: RFC 793 section 3.1 */
+				length--;
 			continue;
 		default:
 			opsize = *ptr++;
-			klee_assume(opsize>=2);
-			klee_assume(opsize<=length);
-			klee_assume(opcode<=5);
-			klee_assume(opcode>=0);
-			if (opsize < 2) /* "silly options" */
-				return;
-			if (opsize > length)
-				return;	/* don't parse partial options */
 			switch (opcode) {
 			case TCPOPT_MSS:
 				klee_assume(opsize == TCPOLEN_MSS && th->syn && !estab);
+				
+		klee_warning("assume opsize1");
 				if (opsize == TCPOLEN_MSS && th->syn && !estab) {
 					u16 in_mss = get_unaligned_be16(ptr);
 					if (in_mss) {
@@ -1108,6 +1259,8 @@ void faked_tcp_parse_options(const struct sk_buff *skb,
 				}
 				break;
 			case TCPOPT_WINDOW:
+		
+		klee_warning("assume opsize2");
 				klee_assume(opsize == TCPOLEN_WINDOW && th->syn &&
 				    !estab && sysctl_tcp_window_scaling);
 				if (opsize == TCPOLEN_WINDOW && th->syn &&
@@ -1122,6 +1275,7 @@ void faked_tcp_parse_options(const struct sk_buff *skb,
 				}
 				break;
 			case TCPOPT_TIMESTAMP:
+		klee_warning("assume opsize3");
 				klee_assume((opsize == TCPOLEN_TIMESTAMP) &&
 				    ((estab && opt_rx->tstamp_ok) ||
 				     (!estab && sysctl_tcp_timestamps)));
@@ -1663,8 +1817,11 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 			klee_alias_function("skb_copy_bits","faked_skb_copy_bits");
 			klee_alias_function("dst_release","faked_dst_release");
 			klee_alias_function("tcp_grow_window","faked_tcp_grow_window");
+			klee_alias_function("__tcp_select_window","faked___tcp_select_window");
 			klee_alias_function("tcp_parse_options","faked_tcp_parse_options");
 			klee_alias_function("tcp_try_rmem_schedule","faked_tcp_try_rmem_schedule");
+			klee_alias_function("tcp_event_data_recv","faked_tcp_event_data_recv");
+			klee_alias_function("tcp_ack_update_window","faked_tcp_ack_update_window");
 			cur=(struct thread_info *)malloc0(sizeof(struct thread_info));
 
 			struct task_struct  * task=(struct task_struct*)malloc0(sizeof( struct task_struct));
@@ -1689,6 +1846,7 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 	void init_sock2(struct sock* sk){
 		struct socket* sock=malloc0(sizeof(struct socket));
 		klee_make_symbolic(sock,sizeof(struct socket),"socket");
+
 		sock->sk=sk;
 		sock->file=NULL;
 		sock->state=SS_CONNECTED;
@@ -1697,6 +1855,7 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 		skb_queue_head_init(&sk->sk_receive_queue);
 		skb_queue_head_init(&sk->sk_write_queue);
 		skb_queue_head_init(&sk->sk_error_queue);
+		faked_tcp_init_sock(sk);
 		sk->sk_send_head        =       tcp_write_queue_head(sk);
 		sk->sk_peer_pid         =       NULL;
 		sk->sk_frag.page        =       NULL;
@@ -1733,11 +1892,11 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 		inet->inet_opt=inet_opt;
 		inet_csk(sk)->icsk_ca_state=TCP_CA_Open;
 			 struct tcp_sock *tp = tcp_sk(sk);
-			tp->lost_out=0;
-			tp->lost_skb_hint=NULL;
-			tp->sacked_out=0;
-			tp->fackets_out=0;
-			tp->retrans_out = 0;
+			klee_assume(tp->lost_out==0);
+			klee_assume(tp->lost_skb_hint==NULL);
+			klee_assume(tp->sacked_out==0);
+			klee_assume(tp->fackets_out==0);
+			klee_assume(tp->retrans_out == 0);
 			 tcp_enable_fack(tp);
 	sysctl_tcp_limit_output_bytes =(1<<31);
 	}
@@ -1871,6 +2030,7 @@ static void faked_inet_csk_reset_xmit_timer(struct sock *sk, const int what,
 
 	}
 void init_net2(void){
+	int i;
 #define SYMBOL_DEFINE_SNMP_STAT(type,name) \
 	int name ## _size=sizeof(type);\
 	type name,name ## _2;\
@@ -1878,14 +2038,28 @@ void init_net2(void){
 	klee_make_symbolic(&name,sizeof(__typeof__(type)),"input_init_net.mib."#name);\
 	(&init_net)->mib.name=malloc0(name ## _size);\
 	(&original_init_net)->mib.name=malloc0(name ## _size);\
-	memcpy((&init_net)->mib.name,&name,name ## _size);\
-	memcpy((&original_init_net)->mib.name,&name,name ## _size);
-	
+	for ( i=0;i<name ## _size/sizeof(unsigned long);++i){\
+		name.mibs[i]=0;\
+		(&init_net)->mib.name->mibs[i]=name.mibs[i];\
+		(&original_init_net)->mib.name->mibs[i]=name.mibs[i];\
+	}
+		//memcpy((&init_net)->mib.name,&name,name ## _size);\
+//	memcpy((&original_init_net)->mib.name,&name,name ## _size);
 	SYMBOL_DEFINE_SNMP_STAT(struct ipstats_mib,ip_statistics)
 		SYMBOL_DEFINE_SNMP_STAT(struct icmp_mib, icmp_statistics)
 		SYMBOL_DEFINE_SNMP_STAT(struct tcp_mib, tcp_statistics)
 		SYMBOL_DEFINE_SNMP_STAT(struct linux_mib, net_statistics)
-		SYMBOL_DEFINE_SNMP_STAT(struct icmpmsg_mib, icmpmsg_statistics)
+		//SYMBOL_DEFINE_SNMP_STAT_atomic(struct icmpmsg_mib, icmpmsg_statistics);
+	long icmpmsg_tmp[ICMPMSG_MIB_MAX];
+	klee_make_symbolic(icmpmsg_tmp,ICMPMSG_MIB_MAX*sizeof(long),"output_init_net.mib.icmpmsg_statistics");
+	klee_make_symbolic(icmpmsg_tmp,ICMPMSG_MIB_MAX*sizeof(long),"input_init_net.mib.icmpmsg_statistics");
+	(&init_net)->mib.icmpmsg_statistics=malloc0(sizeof(struct icmpmsg_mib));\
+	(&original_init_net)->mib.icmpmsg_statistics=malloc0(sizeof(struct icmpmsg_mib));\
+	for(i=0;i<ICMPMSG_MIB_MAX;++i){
+		icmpmsg_tmp[i]=0;
+		init_net.mib.icmpmsg_statistics->mibs[i].counter=icmpmsg_tmp[i];
+		original_init_net.mib.icmpmsg_statistics->mibs[i].counter=icmpmsg_tmp[i];
+	}
 		/*		
 		 *		struct tcp_mib tcp_mibs;//=malloc(sizeof(struct tcp_mib));
 		 *				klee_make_symbolic(&tcp_mibs,sizeof(struct tcp_mib),"init_net.mib.tcp_statistics");
@@ -1968,16 +2142,40 @@ int tcp_main()//(int argc,char** argv)
 		//	memcpy(sk_result,sk,sock_size);
 		//printf("%s",(tcp_flag_word(th)));
 		printf("offset of sk->tcp_header %d,xmit_size_goal_segs=%d,pred_flag=%d,copied_seq=%d,lost_cnt_hint=%d",offsetof(struct tcp_sock,tcp_header_len),offsetof(struct tcp_sock,xmit_size_goal_segs),offsetof(struct tcp_sock,pred_flags),offsetof(struct tcp_sock,copied_seq),offsetof(struct tcp_sock,lost_cnt_hint));
+	klee_assume(TCP_SKB_CB(skb)->seq != tk->rcv_nxt);
+	tcp_flag_word(th)  = tp->pred_flags;
+	klee_assume(sk->sk_lock.owned==1);
+	klee_assume(TCP_SKB_CB(skb)->ack_seq != tk->snd_una);
 		klee_assume(skb->len<2147483648);
 		unsigned int inflight=tcp_packets_in_flight(tk);
 		klee_assume(inflight<tk->snd_ssthresh);
 		klee_assume(skb->len>= (th->doff << 2));
-	klee_assume(TCP_SKB_CB(skb)->seq != tk->rcv_nxt);
 //	klee_assume(!after(TCP_SKB_CB(skb)->ack_seq, tk->snd_nxt));
 	u32 offset2=tk->urg_seq-ntohl(th->seq)+th->doff*4-th->syn;
 	klee_assume(offset2<skb->len);
 	klee_assume(th->doff<15);
 	klee_assume(th->doff>5);
+	klee_assume(th->urg==0);
+	klee_assume(tk->urg_data!= TCP_URG_NOTYET);
+	klee_assume((tk->ecn_flags&TCP_ECN_OK)>0);
+unsigned int rmem_alloc=atomic_read(&sk->sk_rmem_alloc); 
+	klee_assume(rmem_alloc< sk->sk_rcvbuf);
+	klee_assume((TCP_SKB_CB(skb)->tcp_flags & TCPHDR_FIN)==0);
+
+		struct inet_connection_sock *icsk = inet_csk(sk);
+klee_assume(icsk->icsk_ack.rcv_mss!=0);
+	unsigned int quickacks = tcp_sk(sk)->rcv_wnd / (2 * icsk->icsk_ack.rcv_mss);
+	klee_assume(quickacks==0);
+	klee_assume(2 <= icsk->icsk_ack.quick);
+	klee_assume(!(tk->srtt_us));
+	klee_assume(tk->tlp_high_seq==0);
+	klee_assume(icsk->icsk_mtup.enabled==0);
+	klee_assume(tk->rx_opt.num_sacks==0);
+	klee_assume(tk->rx_opt.tstamp_ok);
+	klee_assume(sock_flag(sk,SOCK_DEAD));
+	klee_assume((TCP_SKB_CB(skb)->ip_dsfield & INET_ECN_MASK)==INET_ECN_NOT_ECT);
+	klee_assume(!(!th->ack && !th->rst && !th->syn));
+	klee_assume(!(tk->rx_opt.tstamp_ok && th->doff == ((sizeof(*th) + TCPOLEN_TSTAMP_ALIGNED) / 4)));
 	tcp_rcv_established(tk,skb,th,skb->len);
 	int i=0;
 	printf("test---result---------------");
@@ -1987,18 +2185,18 @@ int tcp_main()//(int argc,char** argv)
 		memset(buf,0,100);\
 		sprintf(buf,"(ReadLSB w64 %d output_init_net.mib."#name ".mibs)",i*8);\
 		if(init_net.mib.name->mibs[i]!=original_init_net.mib.name->mibs[i])\
-			klee_make_observable(buf,init_net.mib.name->mibs[i]);	\
+		klee_make_observable(buf,init_net.mib.name->mibs[i]);	\
 	}
+	
 
 #define PRINT_atomic_MIB(type,name)\
 	for(i=0;i<sizeof(type)/sizeof(unsigned long);i++){\
 		memset(buf,0,100);\
 		sprintf(buf,"(ReadLSB w64 %d output_init_net.mib."#name ".mibs)",i*8);\
-		if(atomic_long_read(&init_net.mib.name->mibs[i])!=atomic_long_read(&original_init_net.mib.name->mibs[i]))\
-			klee_make_observable(buf,atomic_long_read(&init_net.mib.name->mibs[i]));	\
+		if(init_net.mib.name->mibs[i].counter=original_init_net.mib.name->mibs[i].counter)\
+		klee_make_observable(buf,init_net.mib.name->mibs[i].counter);	\
 	}
-
-	PRINT_MIB(struct tcp_mib, tcp_statistics)
+		PRINT_MIB(struct tcp_mib, tcp_statistics)
 	PRINT_MIB(struct ipstats_mib, ip_statistics)
 	PRINT_MIB(struct linux_mib, net_statistics)
 	PRINT_MIB(struct icmp_mib, icmp_statistics)
