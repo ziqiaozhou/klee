@@ -202,8 +202,8 @@ usage: (klee_init_env) [options] [program arguments]\n\
   *argcPtr = new_argc;
   *argvPtr = final_argv;
 
-  //klee_init_fds(sym_files, sym_file_len, sym_stdin_len, sym_stdout_flag,
+  klee_init_fds(sym_files, sym_file_len, sym_stdin_len, sym_stdout_flag,
                 //save_all_writes_flag, fd_fail);
-  klee_init_threads();
+  //klee_init_threads();
 }
 
