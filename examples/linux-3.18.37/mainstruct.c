@@ -1211,7 +1211,7 @@ void faked_tcp_parse_options(const struct sk_buff *skb,
 	ptr = (const unsigned char *)(th + 1);
 	opt_rx->saw_tstamp = 0;
 	
-	while (counter<7) {
+	while (counter<1) {
 		int opcode = *ptr++;
 		int opsize;
 	//	klee_assume(opt_rx->sack_ok==0);
@@ -1229,12 +1229,9 @@ void faked_tcp_parse_options(const struct sk_buff *skb,
 			return;
 		}
 		klee_warning("before assume opcode");
-		klee_assume(opcode==(TCPOPT_MSS+counter));
+		klee_assume(opcode==(TCPOPT_TIMESTAMP));
 		klee_warning("assume opcode");
-		counter++;
-		if(counter==2){
-			counter=6;
-		}
+		counter=1;
 		switch (opcode) {
 			case TCPOPT_EOL:
 				return;
@@ -1245,7 +1242,7 @@ void faked_tcp_parse_options(const struct sk_buff *skb,
 			opsize = *ptr++;
 			switch (opcode) {
 			case TCPOPT_MSS:
-				klee_assume(opsize == TCPOLEN_MSS && th->syn && !estab);
+//				klee_assume(opsize == TCPOLEN_MSS && th->syn && !estab);
 				
 		klee_warning("assume opsize1");
 				if (opsize == TCPOLEN_MSS && th->syn && !estab) {
@@ -1276,9 +1273,7 @@ void faked_tcp_parse_options(const struct sk_buff *skb,
 				break;
 			case TCPOPT_TIMESTAMP:
 		klee_warning("assume opsize3");
-				klee_assume((opsize == TCPOLEN_TIMESTAMP) &&
-				    ((estab && opt_rx->tstamp_ok) ||
-				     (!estab && sysctl_tcp_timestamps)));
+				klee_assume((opsize == TCPOLEN_TIMESTAMP) && opt_rx->tstamp_ok);
 				if ((opsize == TCPOLEN_TIMESTAMP) &&
 				    ((estab && opt_rx->tstamp_ok) ||
 				     (!estab && sysctl_tcp_timestamps))) {
@@ -2143,7 +2138,7 @@ int tcp_main()//(int argc,char** argv)
 		//printf("%s",(tcp_flag_word(th)));
 		printf("offset of sk->tcp_header %d,xmit_size_goal_segs=%d,pred_flag=%d,copied_seq=%d,lost_cnt_hint=%d",offsetof(struct tcp_sock,tcp_header_len),offsetof(struct tcp_sock,xmit_size_goal_segs),offsetof(struct tcp_sock,pred_flags),offsetof(struct tcp_sock,copied_seq),offsetof(struct tcp_sock,lost_cnt_hint));
 	klee_assume(TCP_SKB_CB(skb)->seq != tk->rcv_nxt);
-	tcp_flag_word(th)  = tp->pred_flags;
+	tcp_flag_word(th)  = tk->pred_flags;
 	klee_assume(sk->sk_lock.owned==1);
 	klee_assume(TCP_SKB_CB(skb)->ack_seq != tk->snd_una);
 		klee_assume(skb->len<2147483648);
@@ -2176,6 +2171,7 @@ klee_assume(icsk->icsk_ack.rcv_mss!=0);
 	klee_assume((TCP_SKB_CB(skb)->ip_dsfield & INET_ECN_MASK)==INET_ECN_NOT_ECT);
 	klee_assume(!(!th->ack && !th->rst && !th->syn));
 	klee_assume(!(tk->rx_opt.tstamp_ok && th->doff == ((sizeof(*th) + TCPOLEN_TSTAMP_ALIGNED) / 4)));
+	klee_assume(th->syn==1);
 	tcp_rcv_established(tk,skb,th,skb->len);
 	int i=0;
 	printf("test---result---------------");

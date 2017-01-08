@@ -1993,8 +1993,13 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
       
       std::vector<ExecutionState*> branches;
       branch(state, conditions, branches);
-        
-      std::vector<ExecutionState*>::iterator bit = branches.begin();
+	  char count[]="0";
+	  for(auto onestate : branches){
+		  onestate->symPathOS = symPathWriter->open(state.symPathOS);
+		  onestate->symPathOS << count<<getCurrentLine(onestate)<<"\n";
+		  count[0]++;
+	  }
+	  std::vector<ExecutionState*>::iterator bit = branches.begin();
       for (std::map<BasicBlock*, ref<Expr> >::iterator it = 
              targets.begin(), ie = targets.end();
            it != ie; ++it) {

@@ -70,5 +70,5 @@ void klee_init_threads(void) {
     def_data->terminated = 0;
     def_data->ret_value = 0;
     def_data->joinable = 1; // Why not?
-    def_data->wlist = klee_get_wlist();
+    //def_data->wlist = klee_get_wlist();
 }
