@@ -1650,11 +1650,11 @@ void QueryCommand::dump2file(llvm::raw_fd_ostream *f ) {
 	}
 	std::string str;
 	llvm::raw_string_ostream info(str);
-	ExprPPrinter::printQuery(info, ConstraintManager(Constraints),
+	ExprPPrinter::printQuery(*f, ConstraintManager(Constraints),
 				Query, ValuesBegin, ValuesEnd,
 				ObjectsBegin, ObjectsEnd,
 				false);
-	*f<<info.str();
+	//*f<<info.str();
 }
 
 void QueryCommand::dump() {
