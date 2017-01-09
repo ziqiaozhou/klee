@@ -406,7 +406,6 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 	for(pcs_it=LinkedPCfiles.begin(),pc_end=LinkedPCfiles.end();pcs_it!=pc_end;++pcs_it){
 		const char * filename=pcs_it->c_str();
 		llvm::outs()<<"filename="<<filename<<"\n";
-
 #if LLVM_VERSION_CODE < LLVM_VERSION(3,5)
 		OwningPtr<MemoryBuffer> MB0;
 		error_code ec=MemoryBuffer::getFileOrSTDIN(filename, MB0);
@@ -439,6 +438,8 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 			}
 		}
 		OrExprVec.push_back(createAnd(Constraints,Builder));
+
+		MB0.reset(nullptr);
 		success = true;
 		if (unsigned N = P->GetNumErrors()) {
 			llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
@@ -609,8 +610,8 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
   }
   std::unique_ptr<MemoryBuffer> &MB0 = *MBResult;
 #endif
-  success = EvaluateInputAST(path.c_str(),MB0.get(), Builder);
-  return success;
+//success = EvaluateInputAST(path.c_str(),MB0.get(), Builder);
+  return true;
 }
 
 static bool BoundEvaluateInputAST(const char *Filename,
@@ -796,10 +797,23 @@ static bool printInputAsSMTLIBv2(const char *Filename,
 	}
 
 	if (!success)
-	return false;
-
+	  return false;
+	std::string path=OutPath;
+	llvm::raw_fd_ostream * f;
+	std::string Error; 
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
+	f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_None);
+#elif LLVM_VERSION_CODE >= LLVM_VERSION(3,4)
+	f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_Binary);
+#else
+	f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::raw_fd_ostream::F_Binary);
+#endif
+	if(!Error.empty()){
+		llvm::errs()<<"cannot open file"<<Error<<"\n";
+		return 0;
+	}
 	ExprSMTLIBPrinter printer;
-	printer.setOutput(llvm::outs());
+	printer.setOutput(*f);
 
 	unsigned int queryNumber = 0;
 	//Loop over the declarations
@@ -841,7 +855,8 @@ static bool printInputAsSMTLIBv2(const char *Filename,
 			ie = Decls.end(); it != ie; ++it)
 		delete *it;
 	delete P;
-
+	f->close();
+	delete f;
 	return true;
 }
 
@@ -916,7 +931,7 @@ int main(int argc, char **argv) {
   case EvaluateOr:
 	success= EvaluateInputASTOrOtherPC(InputFile=="-" ? "<stdin>" : InputFile.c_str(),
 				MB.get(), Builder);
-
+	break;
   case PrintSMTLIBv2:
 	success = printInputAsSMTLIBv2(InputFile=="-"? "<stdin>" : InputFile.c_str(), MB.get(),Builder);
 	break;
