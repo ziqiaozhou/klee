@@ -437,9 +437,10 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 				}
 			}
 		}
+
 		OrExprVec.push_back(createAnd(Constraints,Builder));
 
-		MB0.reset(nullptr);
+		//MB0.reset(nullptr);
 		success = true;
 		if (unsigned N = P->GetNumErrors()) {
 			llvm::errs() << Filename << ": parse failure: " << N << " errors.\n";
@@ -454,6 +455,14 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 	unsigned Index = 0;
   llvm::raw_fd_ostream * f;
   std::string Error; 
+  ref<Expr> finalExpr=createOr(OrExprVec,Builder);
+
+  ConstraintManager cm;
+ // finalExpr=cm.simplifyExpr(finalExpr);
+  cm.addConstraint(finalExpr);
+  QueryCommand * QC=new QueryCommand(cm.getConstraints(), mainQC->Query,mainQC->Values, mainQC->Objects);
+
+		llvm::outs()<<"merge finished"<<"\n";
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
   f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_None);
 #elif LLVM_VERSION_CODE >= LLVM_VERSION(3,4)
@@ -465,18 +474,27 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
 	  llvm::errs()<<"cannot open file"<<Error<<"\n";
 	  return 0;
   }
-  ref<Expr> finalExpr=createOr(OrExprVec,Builder);
-
-  ConstraintManager cm;
- // finalExpr=cm.simplifyExpr(finalExpr);
-  cm.addConstraint(finalExpr);
-  QueryCommand * QC=new QueryCommand(cm.getConstraints(), mainQC->Query,mainQC->Values, mainQC->Objects);
+  llvm::outs()<<"declare start\n";
   for (std::vector<Decl*>::iterator it = Decls.begin(),
 			  ie = Decls.end(); it != ie; ++it) {
 	  Decl *D = *it;
-	  if (ArrayDecl *QC = dyn_cast<ArrayDecl>(D)) {
-		  QC->dump2file(f);
+	  if (ArrayDecl *QC0 = dyn_cast<ArrayDecl>(D)) {
+		  QC0->dump2file(f);
 	  }
+  }
+
+  f->close();
+  llvm::outs()<<"query start\n";
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_None|llvm::sys::fs::F_Append);
+#elif LLVM_VERSION_CODE >= LLVM_VERSION(3,4)
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_Binary|llvm::sys::fs::F_Append);
+#else
+  f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::raw_fd_ostream::F_Binary|llvm::sys::fs::F_Append);
+#endif
+  if(!Error.empty()){
+	  llvm::errs()<<"cannot open file"<<Error<<"\n";
+	  return 0;
   }
 
   QC->dump2file(f);
