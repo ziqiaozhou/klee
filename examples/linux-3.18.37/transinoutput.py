@@ -5,6 +5,7 @@ from optparse import OptionParser
 from sets import Set
 keywords=[];
 def getlst(filename):
+	lst=[]
 	f=open(filename)
 	for line in f:
 		lst.append(line.replace("\n",""))
