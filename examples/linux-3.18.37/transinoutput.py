@@ -83,7 +83,7 @@ def AddSA(Dir,inputfile):
 			declare.append(line)
 		else:
 			query.append(line)
-	putfile(Dir+"result.pc.clean","".join(declare)+"".join(query),'.pc.clean','.pc.new',"")
+	putfile(Dir+"result.pc.clean",["".join(declare),"".join(query)],'.pc.clean','.pc.new',"")
 	f.close()
 
 def mergeDir(Dirs):
