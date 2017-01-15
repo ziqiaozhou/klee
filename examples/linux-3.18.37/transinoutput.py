@@ -1,8 +1,16 @@
 import os;
 import sys;
 import math
+from optparse import OptionParser
 from sets import Set
 keywords=[];
+def getlst(filename):
+	f=open(filename)
+	for line in f:
+		lst.append(line.replace("\n",""))
+	f.close()
+	return lst
+
 def findkey(line):
 	for key in keywords:
 		if key in line:
@@ -136,27 +144,78 @@ def cleanfile(filename,newsubfix=".clean"):
 	f.write(allstr);
 	f.close()
 
+def multiRoundSMT(round,filename,changedfile):
+	#fixed=getlst(fixedfile)
+	changable=getlst(changedfile)
+	cDeclare=[]
+	f=open(filename)
+	allstr=""
+	for line in f:
+		if "declare-fun" in line:
+			arr=line.split(" ")
+			name=arr[1]
+			if name in changeable:
+				for i in range(1,round):
+					line=line+line.replace(name,name+"_"+str(i));
+		if "(assert" in line:
+			query=line;
+			for word in changable:
+				for i in range(1,round):
+					line=line+line.replace(word,word+"_"+str(round))
+		allstr=allstr+line
+	f.close()
+	f=open(filename+str(round)+".smt2",'w+')
+	f.write(allstr)
+	f.close()
+parser = OptionParser()
 
+def multiRountOpt(option, opt_str, value, parser):
+	argv=parser.rargs
+	if len(argv)==3:
+		multiRoundSMT(argv[0],argv[1],argv[2])
+	else:
+		print "error -m round file"
+		return
+
+def classifyOpt(option, opt_str, value, parser):
+	argv=parser.rargs
+	if len(argv)==1:
+		classifyOb(argv[0],'.observable',0);
+	if len(argv)==2:
+		classifyOb(argv[0],'.observable',argv[1]);
+
+def mergeOpt(option, opt_str, value, parser):
+	argv=parser.rargs
+	if len(argv)>=2:
+		mergeDir(argv[1:])
+
+parser.add_option("-m","--multi-round",action="callback", callback=multiRountOpt)
+parser.add_option("-c","--classify",action="callback", callback=classifyOpt)
+parser.add_option("-c","--merge",action="callback", callback=mergeOpt)
+
+"""
 if len(sys.argv)==2:
 	classifyOb(sys.argv[1],'.observable',0);
 if len(sys.argv)>2:
 	mergeDir(sys.argv[1:])
-filename="result-klee-all/result.pc.new"
-f=open(filename)
-allstr=""
-name0="const_arr57"
-for line in f:
-	if "array" not in line:
-		if "const" in line:
-			name1start=line.find("const");
-			name1end=line.find(")",name1start)
-			name1=line[name1start:name1end]
-			line=line.replace(name1,name0)
-	allstr=allstr+line
-f.close()
-f=open(filename+".clean",'w+')
-f.write(allstr)
-f.close()
+	"""
+def const_clean():
+	filename="result-klee-all/result.pc.new"
+	f=open(filename)
+	allstr=""
+	name0="const_arr57"
+	for line in f:
+		if "array" not in line:
+			if "const" in line:
+				name1start=line.find("const");
+				name1end=line.find(")",name1start)
+				name1=line[name1start:name1end]
+				line=line.replace(name1,name0)
+		allstr=allstr+line
+	f.close()
+	f=open(filename+".clean",'w+')
+	f.write(allstr)
+	f.close()
 
 #cleanfile("result-klee-all/result.pc",".clean");
 
