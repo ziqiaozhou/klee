@@ -149,6 +149,7 @@ def multiRoundSMT(round,filename,changedfile):
 	changable=getlst(changedfile)
 	cDeclare=[]
 	f=open(filename)
+	print changable
 	allstr=""
 	for line in f:
 		if "declare-fun" in line:
@@ -171,6 +172,7 @@ parser = OptionParser()
 
 def multiRountOpt(option, opt_str, value, parser):
 	argv=parser.rargs
+	print "multi",argv
 	if len(argv)==3:
 		multiRoundSMT(argv[0],argv[1],argv[2])
 	else:
@@ -189,10 +191,10 @@ def mergeOpt(option, opt_str, value, parser):
 	if len(argv)>=2:
 		mergeDir(argv[1:])
 
-parser.add_option("-r","--multi-round",action="callback", callback=multiRountOpt)
+parser.add_option("-m","--multi-round",action="callback", callback=multiRountOpt)
 parser.add_option("-c","--classify",action="callback", callback=classifyOpt)
 parser.add_option("-g","--merge",action="callback", callback=mergeOpt)
-
+parser.parse_args()
 """
 if len(sys.argv)==2:
 	classifyOb(sys.argv[1],'.observable',0);
