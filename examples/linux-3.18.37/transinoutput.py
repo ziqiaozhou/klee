@@ -141,6 +141,22 @@ if len(sys.argv)==2:
 	classifyOb(sys.argv[1],'.observable',0);
 if len(sys.argv)>2:
 	mergeDir(sys.argv[1:])
+filename="result-klee-all/result.pc.new"
+f=open(filename)
+allstr=""
+name0="const_arr57"
+for line in f:
+	if "array" not in line:
+		if "const" in line:
+			name1start=line.find("const");
+			name1end=line.find(")",name1start)
+			name1=line[name1start:name1end]
+			line=line.replace(name1,name0)
+	allstr=allstr+line
+f.close()
+f=open(filename+".clean",'w+')
+f.write(allstr)
+f.close()
 
 #cleanfile("result-klee-all/result.pc",".clean");
 
@@ -149,4 +165,4 @@ if len(sys.argv)>2:
 		if "subpc" in filename:
 			cleanfile("result-klee-all/result/"+filename,".clean")"""
 	#cleanfile("result-klee-out-126/result.pc")
-AddSA("result-klee-all","SA.txt")
+#AddSA("result-klee-all/","SA.txt")
