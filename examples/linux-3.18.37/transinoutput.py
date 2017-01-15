@@ -167,7 +167,7 @@ def multiRoundSMT(round,filename,changedfile):
 			for i in range(1,round):
 				newline="";
 				for word in changeable:
-					if line.fine(word)<0:
+					if line.find(word)<0:
 						continue
 					if newline=="" and len(line)>1:
 						newline=line;
