@@ -166,7 +166,7 @@ def multiRoundSMT(round,filename,changedfile):
 			outline=line;
 			for word in changeable:
 				for i in range(1,round):
-					outline=outlineline+line.replace(word,word+"_"+str(1))
+					outline=outline+line.replace(word,word+"_"+str(1))
 
 		allstr=allstr+outline
 	f.close()
