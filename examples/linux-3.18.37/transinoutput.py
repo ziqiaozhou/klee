@@ -147,10 +147,10 @@ def cleanfile(filename,newsubfix=".clean"):
 
 def multiRoundSMT(round,filename,changedfile):
 	#fixed=getlst(fixedfile)
-	changable=getlst(changedfile)
+	changeable=getlst(changedfile)
 	cDeclare=[]
 	f=open(filename)
-	print changable
+	print changeable
 	allstr=""
 	for line in f:
 		if "declare-fun" in line:
