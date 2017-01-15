@@ -8,7 +8,7 @@ def findkey(line):
 		if key in line:
 			return key;
 	return ""
-def putfile(filename,new,subfix=".pc",newsubfix='.pc1'):
+def putfile(filename,new,subfix=".pc",newsubfix='.pc1',resultDir="result-"):
 	f=open(filename)
 	firstline=""
 	declares=[]
@@ -26,7 +26,7 @@ def putfile(filename,new,subfix=".pc",newsubfix='.pc1'):
 	f.close()
 	start=firstline.find("[")
 	firstline=firstline[0:start+1]+new[1]+"\n"+firstline[start+1:]
-	f=open("result-"+filename.replace(subfix,newsubfix),'w+')
+	f=open(resultDir+filename.replace(subfix,newsubfix),'w+')
 	f.write(''.join(declares)+'\n'+firstline+"".join(query))
 	f.close()
 
@@ -75,13 +75,15 @@ def classifyOb(Dir,subfix=".observable",start=0):
 	f.close()
 
 def AddSA(Dir,inputfile):
+	declare=[]
+	query=[]
 	f=open(inputfile);
 	for line in f:
 		if "array" in line:
 			declare.append(line)
 		else:
 			query.append(line)
-	putfile(Dir+"result.pc.clean","".join(declare)+"".join(query),'.pc.clean','.pc.new')
+	putfile(Dir+"result.pc.clean","".join(declare)+"".join(query),'.pc.clean','.pc.new',"")
 	f.close()
 
 def mergeDir(Dirs):
