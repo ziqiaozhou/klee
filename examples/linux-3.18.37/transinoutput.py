@@ -156,15 +156,19 @@ def multiRoundSMT(round,filename,changedfile):
 		if "declare-fun" in line:
 			arr=line.split(" ")
 			name=arr[1]
+			outline=line
 			if name in changeable:
 				for i in range(1,round):
-					line=line+line.replace(name,name+"_"+str(i));
+					outline=outline+line.replace(name,name+"_"+str(i));
+		else:
+			outline=line
 		if "(assert" in line:
-			query=line;
-			for word in changable:
+			outline=line;
+			for word in changeable:
 				for i in range(1,round):
-					line=line+line.replace(word,word+"_"+str(round))
-		allstr=allstr+line
+					outline=outlineline+line.replace(word,word+"_"+str(1))
+
+		allstr=allstr+outline
 	f.close()
 	f=open(filename+str(round)+".smt2",'w+')
 	f.write(allstr)
@@ -175,7 +179,7 @@ def multiRountOpt(option, opt_str, value, parser):
 	argv=parser.rargs
 	print "multi",argv
 	if len(argv)==3:
-		multiRoundSMT(argv[0],argv[1],argv[2])
+		multiRoundSMT(int(argv[0]),argv[1],argv[2])
 	else:
 		print "error -m round file"
 		return
