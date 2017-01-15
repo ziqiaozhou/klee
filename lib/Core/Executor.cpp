@@ -116,9 +116,14 @@ using namespace klee;
 
 
 
+static int pre_index=0;
 namespace {
+	cl::opt<std::string>
+		Prepath("prepath",
+					cl::desc("input predefined paths 101010..."),
+					cl::init(""));
 #if MULTITHREAD
-  cl::opt<bool>
+	cl::opt<bool>
 	    DebugSchedulingHistory("debug-sched-history",
 					            cl::desc("Print scheduling history during execution."),
 								            cl::init(false));
@@ -944,30 +949,47 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
 
     return StatePair(&current, 0);
   } else if (res==Solver::False) {
-    if (!isInternal) {
-      if (pathWriter) {
-        current.pathOS << "0";
-      }
-    }
+	  if (!isInternal) {
+		  if (pathWriter) {
+			  current.pathOS << "0";
+		  }
+	  }
 
-    return StatePair(0, &current);
+	  return StatePair(0, &current);
   } else {
-    TimerStatIncrementer timer(stats::forkTime);
-    ExecutionState *falseState, *trueState = &current;
+	  ExecutionState *falseState, *trueState = &current;
+	  if(Prepath[pre_index]=='0'){
+		  if (pathWriter)
+			trueState->pathOS << "0";
+		  if (symPathWriter) 
+			trueState->symPathOS << "0"<<getCurrentLine(trueState)<<"\n";
+		  addConstraint(*trueState,Expr::createIsZero(condition));
+		  ++pre_index;
+		  return StatePair(0, &current);
+	  }
+	  if(Prepath[pre_index]=='1'){
+		  if (pathWriter)
+			trueState->pathOS <<"1";
+		  if (symPathWriter) 
+			trueState->symPathOS <<"1"<<getCurrentLine(trueState)<<"\n";
+		  ++pre_index;
+		  addConstraint(*trueState,condition);
+		  return StatePair(0, &current);
+	  }
 
-    ++stats::forks;
+	  TimerStatIncrementer timer(stats::forkTime);
+	  ++stats::forks;
+	  falseState = trueState->branch();
+	  addedStates.insert(falseState);
 
-    falseState = trueState->branch();
-    addedStates.insert(falseState);
+	  if (RandomizeFork && theRNG.getBool())
+		std::swap(trueState, falseState);
 
-    if (RandomizeFork && theRNG.getBool())
-      std::swap(trueState, falseState);
-
-    if (it != seedMap.end()) {
-      std::vector<SeedInfo> seeds = it->second;
-      it->second.clear();
-      std::vector<SeedInfo> &trueSeeds = seedMap[trueState];
-      std::vector<SeedInfo> &falseSeeds = seedMap[falseState];
+	  if (it != seedMap.end()) {
+		  std::vector<SeedInfo> seeds = it->second;
+		  it->second.clear();
+		  std::vector<SeedInfo> &trueSeeds = seedMap[trueState];
+		  std::vector<SeedInfo> &falseSeeds = seedMap[falseState];
       for (std::vector<SeedInfo>::iterator siit = seeds.begin(), 
              siie = seeds.end(); siit != siie; ++siit) {
         ref<ConstantExpr> res;
@@ -1016,7 +1038,8 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
       }
     }
 
-    addConstraint(*trueState, condition);
+
+	addConstraint(*trueState, condition);
     addConstraint(*falseState, Expr::createIsZero(condition));
 
     // Kinda gross, do we even really still want this option?

@@ -462,7 +462,11 @@ void KleeHandler::processTestCase(const ExecutionState &state,
         assert(o->bytes);
         std::copy(out[i].second.begin(), out[i].second.end(), o->bytes);
       }
-
+#if MULTITHREAD
+	  b.numSchedSteps = state.schedulingHistory.size();
+	  b.schedSteps = new long unsigned[b.numSchedSteps];
+	  std::copy(state.schedulingHistory.begin(),state.schedulingHistory.end(),b.schedSteps);
+#endif
       if (!kTest_toFile(&b, getOutputFilename(getTestFilename("ktest", id)).c_str())) {
         klee_warning("unable to write output test case, losing it");
       }
@@ -507,7 +511,7 @@ void KleeHandler::processTestCase(const ExecutionState &state,
 	if (errorMessage || WritePCs) {
 		std::string constraints;
 		std:: string declarestr="";
-	llvm::raw_string_ostream declarestrs(declarestr);
+		llvm::raw_string_ostream declarestrs(declarestr);
 		m_interpreter->getConstraintLog(state, constraints,Interpreter::KQUERY);
 		llvm::raw_ostream *f = openTestFile("pc", id);
 		for(auto it : state.symbolics){
@@ -515,7 +519,7 @@ void KleeHandler::processTestCase(const ExecutionState &state,
 			declarestrs<<"array "<<it.second->name<<"["<<it.second->size<<"]: w32 -> w8 = symbolic\n";
 		}
 		*f << constraints;
-
+		delete f;
 		int assert_index=constraints.rfind("]");
 		constraints.insert(assert_index,"\n"+obstrs.str());
 		llvm::raw_ostream *f2 = openTestFile("pc0", id);
@@ -792,6 +796,8 @@ static const char *modelledExternals[] = {
   "klee_is_symbolic",
   "klee_make_symbolic",
   "klee_mark_global",
+  "pread",
+  "pread64",
   "klee_merge",
   "klee_prefer_cex",
   "klee_print_expr",
@@ -803,6 +809,16 @@ static const char *modelledExternals[] = {
   "klee_warning_once",
   "klee_alias_function",
   "klee_stack_trace",
+#if MULTITHREAD
+  "klee_get_context",
+  "klee_get_obj_size",
+  "klee_get_wlist",
+  "klee_thread_create",
+  "klee_thread_notify",
+  "klee_thread_preempt",
+  "klee_thread_sleep",
+  "klee_thread_terminate",
+#endif
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 1)
   "llvm.dbg.declare",
   "llvm.dbg.value",
@@ -1354,9 +1370,77 @@ int main(int argc, char **argv, char **envp) {
   if (WithPOSIXRuntime) {
     SmallString<128> Path(Opts.LibraryDir);
     llvm::sys::path::append(Path, "libkleeRuntimePOSIX.bca");
-    klee_message("NOTE: Using model: %s", Path.c_str());
-    mainModule = klee::linkWithLibrary(mainModule, Path.c_str());
-    assert(mainModule && "unable to link with simple model");
+	klee_message("NOTE: Using model: %s", Path.c_str());
+	mainModule = klee::linkWithLibrary(mainModule, Path.c_str());
+	assert(mainModule && "unable to link with simple model");
+	std::map<std::string, const GlobalValue*> underlyingFn;
+
+	for (Module::iterator it = mainModule->begin(); it != mainModule->end(); it++) {
+		Function *modelFunction = it;
+		StringRef modelName = modelFunction->getName();
+
+		if (!modelName.startswith("__klee_model_"))
+		  continue;
+
+		StringRef modelledName = modelName.substr(strlen("__klee_model_"), modelName.size());
+
+		const GlobalValue *modelledFunction = mainModule->getNamedValue(modelledName);
+
+		if (modelledFunction != NULL) {
+		klee_warning("bad model");
+			if (const GlobalAlias *modelledA = dyn_cast<GlobalAlias>(modelledFunction)) {
+				/*const GlobalValue *GV = modelledA->resolveAliasedGlobal(false);
+				if (!GV || GV->getType() != modelledFunction->getType())
+				  continue; // TODO: support bitcasted aliases
+				modelledFunction = GV;
+		*/	}
+
+			underlyingFn[modelledName.str()] = modelledFunction;
+
+
+			Constant *adaptedFunction = mainModule->getOrInsertFunction(
+						modelFunction->getName(), dyn_cast<Function>(modelledFunction)->getFunctionType());
+
+			const_cast<GlobalValue*>(modelledFunction)->replaceAllUsesWith(adaptedFunction);
+		}
+	}
+
+	for (Module::iterator it = mainModule->begin(); it != mainModule->end();) {
+		Function *originalFunction = it;
+		StringRef originalName = originalFunction->getName();
+
+		  if (!originalName.startswith("__klee_original_")) {
+			  it++;
+			  continue;
+		  }
+
+		  StringRef targetName = originalName.substr(strlen("__klee_original_"));
+
+
+
+		  const GlobalValue *targetFunction;
+		  if (underlyingFn.count(targetName.str()) > 0)
+			targetFunction = underlyingFn[targetName.str()];
+		  else
+			targetFunction = mainModule->getNamedValue(targetName);
+
+		  if (targetFunction) {
+			  Constant *adaptedFunction = mainModule->getOrInsertFunction(
+						  targetFunction->getName(), dyn_cast<Function>(originalFunction)->getFunctionType());
+
+			  originalFunction->replaceAllUsesWith(adaptedFunction);
+			  it++;
+			  originalFunction->eraseFromParent();
+		  } else {
+			  // We switch to strings in order to avoid memory errors due to StringRef
+			  //       // destruction inside setName().
+			  std::string targetNameStr = targetName.str();
+			  originalFunction->setName(targetNameStr);
+			  assert(originalFunction->getName().str() == targetNameStr);
+			  it++;
+		  }
+
+	  }
   }
 
   std::vector<std::string>::iterator libs_it;
