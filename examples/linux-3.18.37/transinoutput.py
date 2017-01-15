@@ -189,9 +189,9 @@ def mergeOpt(option, opt_str, value, parser):
 	if len(argv)>=2:
 		mergeDir(argv[1:])
 
-parser.add_option("-m","--multi-round",action="callback", callback=multiRountOpt)
+parser.add_option("-r","--multi-round",action="callback", callback=multiRountOpt)
 parser.add_option("-c","--classify",action="callback", callback=classifyOpt)
-parser.add_option("-c","--merge",action="callback", callback=mergeOpt)
+parser.add_option("-g","--merge",action="callback", callback=mergeOpt)
 
 """
 if len(sys.argv)==2:
