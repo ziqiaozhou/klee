@@ -29,6 +29,6 @@ NO_BUILD_ARCHIVE=1
 
 # Add __NO_INLINE__ to prevent glibc from using inline definitions of some
 # builtins.
-C.Flags += -D__NO_INLINE__
+C.Flags += -D__NO_INLINE__ -I/usr/include/mysql
 
 include $(LEVEL)/Makefile.common

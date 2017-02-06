@@ -425,7 +425,6 @@ void SpecialFunctionHandler::handleMalloc(ExecutionState &state,
                                   KInstruction *target,
                                   std::vector<ref<Expr> > &arguments) {
   // XXX should type check args
-  klee_warning("size=%d",arguments.size());
   //assert(arguments.size()==1 && "invalid number of arguments to malloc");
   executor.executeAlloc(state, arguments[0], false, target);
 }

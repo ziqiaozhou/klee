@@ -959,22 +959,26 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
   } else {
 	  ExecutionState *falseState, *trueState = &current;
 	  if(Prepath[pre_index]=='0'){
+		  if (!isInternal) {
 		  if (pathWriter)
 			trueState->pathOS << "0";
 		  if (symPathWriter) 
 			trueState->symPathOS << "0"<<getCurrentLine(trueState)<<"\n";
-		  addConstraint(*trueState,Expr::createIsZero(condition));
+		  }
+		  addConstraint(current,Expr::createIsZero(condition));
 		  ++pre_index;
 		  return StatePair(0, &current);
 	  }
 	  if(Prepath[pre_index]=='1'){
+		  if (!isInternal) {
 		  if (pathWriter)
 			trueState->pathOS <<"1";
 		  if (symPathWriter) 
 			trueState->symPathOS <<"1"<<getCurrentLine(trueState)<<"\n";
+		  }
 		  ++pre_index;
-		  addConstraint(*trueState,condition);
-		  return StatePair(0, &current);
+		  addConstraint(current,condition);
+		  return StatePair(&current,0);
 	  }
 
 	  TimerStatIncrementer timer(stats::forkTime);
@@ -2016,12 +2020,12 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
       
       std::vector<ExecutionState*> branches;
       branch(state, conditions, branches);
-	  char count[]="0";
+	  /*char count[]="0";
 	  for(auto onestate : branches){
 		  onestate->symPathOS = symPathWriter->open(state.symPathOS);
 		  onestate->symPathOS << count<<getCurrentLine(onestate)<<"\n";
 		  count[0]++;
-	  }
+	  }*/
 	  std::vector<ExecutionState*>::iterator bit = branches.begin();
       for (std::map<BasicBlock*, ref<Expr> >::iterator it = 
              targets.begin(), ie = targets.end();

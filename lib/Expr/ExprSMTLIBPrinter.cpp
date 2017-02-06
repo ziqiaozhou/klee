@@ -505,11 +505,15 @@ void ExprSMTLIBPrinter::scanAll() {
   // perform scan of all expressions
   for (ConstraintManager::const_iterator i = query->constraints.begin();
        i != query->constraints.end(); i++)
-    scan(*i);
+  {  scan(*i);
+  llvm::errs()<<"scan(*i)";
+  }
 
+  llvm::errs()<<"scan query too";
   // Scan the query too
   scan(query->expr);
 
+  llvm::errs()<<"end scan query";
   // Scan bindings for expression intra-dependencies
   if (abbrMode == ABBR_LET)
     scanBindingExprDeps();
@@ -525,15 +529,20 @@ void ExprSMTLIBPrinter::generateOutput() {
   if (humanReadable)
     printNotice();
   printOptions();
+  o->flush();
   printSetLogic();
+  o->flush();
+  llvm::errs()<<"output declare";
   printArrayDeclarations();
-
+  o->flush();
+  llvm::errs()<<"output query";
   if (humanReadable)
     printHumanReadableQuery();
   else
     printMachineReadableQuery();
-
+  o->flush();
   printAction();
+  o->flush();
   printExit();
 }
 
