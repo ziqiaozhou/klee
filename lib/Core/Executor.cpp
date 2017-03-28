@@ -118,6 +118,9 @@ using namespace klee;
 
 static int pre_index=0;
 namespace {
+	cl::opt<bool>
+		  UseIfMerge("use-if-merge", 
+					  cl::desc("Enable support for klee_merge() after if (experimental by ziqiao)"));
 	cl::opt<std::string>
 		Prepath("prepath",
 					cl::desc("input predefined paths 101010..."),
@@ -1946,17 +1949,33 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
 #if MULTITHREAD
 	  if (statsTracker && state.stack().back().kf->trackCoverage)
 #else
-	  if (statsTracker && state.stack.back().kf->trackCoverage)
+		if (statsTracker && state.stack.back().kf->trackCoverage)
 #endif
-        statsTracker->markBranchVisited(branches.first, branches.second);
+		  statsTracker->markBranchVisited(branches.first, branches.second);
 
-      if (branches.first)
-        transferToBasicBlock(bi->getSuccessor(0), bi->getParent(), *branches.first);
-      if (branches.second)
-        transferToBasicBlock(bi->getSuccessor(1), bi->getParent(), *branches.second);
-    }
-    break;
-  }
+	  if (branches.first)
+		transferToBasicBlock(bi->getSuccessor(0), bi->getParent(), *branches.first);
+	  if (branches.second)
+		transferToBasicBlock(bi->getSuccessor(1), bi->getParent(), *branches.second);
+	  if(UseIfMerge&&branches.first && branches.second){
+		  //merge
+		  branches.first->try_merge=true;
+
+		  branches.second->try_merge=true;
+		 /* klee::BumpMergingSearcher *mergeSearcher=(klee::BumpMergingSearcher*) searcher;
+		  Instruction *mp0=cast<Instruction>(bi->getSuccessor(0));
+		  Instruction *mp1= cast<Instruction>(bi->getSuccessor(1));
+		   mergeSearcher->insert(mp0, branches.first);
+
+		   mergeSearcher->insert(mp1, branches.second);
+		  //bi->setSuccessor(0,mergeBlock);
+
+			  // bi->setSuccessor(1,mergeBlock);*/
+	  }
+
+	}
+	break;
+						}
   case Instruction::Switch: {
     SwitchInst *si = cast<SwitchInst>(i);
     ref<Expr> cond = eval(ki, 0, state).value;

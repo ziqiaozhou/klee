@@ -13,7 +13,7 @@
 #include "klee/Internal/Module/InstructionInfoTable.h"
 #include "klee/Internal/Module/KInstruction.h"
 #include "klee/Internal/Module/KModule.h"
-
+#include "klee/Internal/Support/ErrorHandling.h"
 #include "klee/Expr.h"
 
 #include "Memory.h"
@@ -81,7 +81,8 @@ ExecutionState::ExecutionState(KFunction *kf) :
     ptreeNode(0)
 #if MULTITHREAD 
 	,wlistCounter(1),
-	preemptions(0)
+	preemptions(0),
+	try_merge(false)
 #endif
 {
 #if MULTITHREAD
@@ -94,7 +95,7 @@ ExecutionState::ExecutionState(KFunction *kf) :
 ExecutionState::ExecutionState(const std::vector<ref<Expr> > &assumptions)
     : constraints(assumptions), queryCost(0.), ptreeNode(0)
 #if MULTITHREAD
-	  ,wlistCounter(1), preemptions(0)
+	  ,wlistCounter(1), preemptions(0),try_merge(false)
 {
 	setupMain(NULL);
 }
@@ -129,6 +130,7 @@ ExecutionState::~ExecutionState() {
 
 ExecutionState::ExecutionState(const ExecutionState& state):
     fnAliases(state.fnAliases),
+	try_merge(false),
 #if !MULTITHREAD
 	pc(state.pc),
     prevPC(state.prevPC),
@@ -150,6 +152,8 @@ ExecutionState::ExecutionState(const ExecutionState& state):
     coveredLines(state.coveredLines),
     ptreeNode(state.ptreeNode),
 	symbolics(state.symbolics),
+	mergeObs(state.mergeObs),
+	observables(state.observables),
 #if MULTITHREAD
 	arrayNames(state.arrayNames),
 	threads(state.threads),
@@ -163,6 +167,7 @@ arrayNames(state.arrayNames)
 {
   for (unsigned int i=0; i<symbolics.size(); i++)
     symbolics[i].first->refCount++;
+
 }
 
 ExecutionState *ExecutionState::branch() {
@@ -324,6 +329,31 @@ bool ExecutionState::merge(const ExecutionState &b) {
   if (symbolics!=b.symbolics)
     return false;
 
+  if(b.mergeObs.size()!=mergeObs.size()){
+	  return false;
+  }
+
+  //klee_warning("check observable %d",mergeObs.size());
+  for (unsigned int i=0; i<mergeObs.size(); i++){
+	 	  const MemoryObject * ma=mergeObs[i].second;
+		  const MemoryObject * mb=b.mergeObs[i].second;
+		  const ObjectState *os = addressSpace.findObject(ma);
+		  const ObjectState *otherOS = b.addressSpace.findObject(ma);
+		  for(unsigned i=0;i<ma->size;++i){
+			  /* std::string obstr="";
+				 llvm::raw_string_ostream obstrs(obstr);
+
+				 obstrs  <<os->read8(i)<<",";
+				 obstrs<<otherOS->read8(i)<<"\n";
+				 klee_warning("%s",obstrs.str().c_str());
+				 */
+			  if(os->read8(i)!=otherOS->read8(i)){
+				  klee_warning("ob value differs\n");
+				  return false;
+			  }
+		  }
+  }
+
   {
 #if MULTITHREAD
 	   std::vector<StackFrame>::const_iterator itA = stack().begin();
@@ -424,7 +454,7 @@ bool ExecutionState::merge(const ExecutionState &b) {
       llvm::errs() << "\t\tmappings differ\n";
     return false;
   }
-  
+ 
   // merge stack
 
   ref<Expr> inA = ConstantExpr::alloc(1, Expr::Bool);

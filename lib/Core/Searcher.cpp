@@ -303,10 +303,12 @@ bool RandomPathSearcher::empty() {
 BumpMergingSearcher::BumpMergingSearcher(Executor &_executor, Searcher *_baseSearcher) 
   : executor(_executor),
     baseSearcher(_baseSearcher),
-    mergeFunction(executor.kmodule->kleeMergeFn) {
+    mergeFunction(executor.kmodule->kleeMergeFn),
+	if_merge(false)
+{
 }
 
-BumpMergingSearcher::~BumpMergingSearcher() {
+	BumpMergingSearcher::~BumpMergingSearcher() {
   delete baseSearcher;
 }
 
@@ -317,14 +319,29 @@ Instruction *BumpMergingSearcher::getMergePoint(ExecutionState &es) {
 #if MULTITHREAD
 	  Instruction *i = es.pc()->inst;
 #else
+
 	  Instruction *i = es.pc->inst;
 #endif
     if (i->getOpcode()==Instruction::Call) {
-      CallSite cs(cast<CallInst>(i));
-      if (mergeFunction==cs.getCalledFunction())
-        return i;
-    }
+		CallSite cs(cast<CallInst>(i));
+		if (mergeFunction==cs.getCalledFunction())
+		  return i;
+	}
+
   }
+	if(es.try_merge){
+
+#if MULTITHREAD
+	  Instruction *i = es.pc()->inst;
+#else
+	  Instruction *i = es.pc->inst;
+#endif
+
+		klee_warning("try merge %lx\n",i);	
+		es.try_merge=false;
+		if_merge=true;
+		return i;
+	}
 
   return 0;
 }
@@ -390,7 +407,9 @@ void BumpMergingSearcher::update(ExecutionState *current,
 MergingSearcher::MergingSearcher(Executor &_executor, Searcher *_baseSearcher) 
   : executor(_executor),
     baseSearcher(_baseSearcher),
-    mergeFunction(executor.kmodule->kleeMergeFn) {
+    mergeFunction(executor.kmodule->kleeMergeFn),
+	if_merge(false)
+{
 }
 
 MergingSearcher::~MergingSearcher() {
@@ -412,6 +431,18 @@ Instruction *MergingSearcher::getMergePoint(ExecutionState &es) {
         return i;
     }
   }
+
+	if(es.try_merge){
+#if MULTITHREAD
+	  Instruction *i = es.pc()->inst;
+#else
+	  Instruction *i = es.pc->inst;
+#endif
+		klee_warning("try merge %lx,code=%s\n",i,i->getOpcodeName());	
+		//es.try_merge=false;
+		if_merge=true;
+		return i;
+	}
 
   return 0;
 }
@@ -482,14 +513,17 @@ ExecutionState &MergingSearcher::selectState() {
         executor.terminateState(**it);
         toMerge.erase(it2);
       }
-
       // step past merge and toss base back in pool
       statesAtMerge.erase(statesAtMerge.find(base));
+	  if(!base->try_merge){
 #if MULTITHREAD
 	  ++base->pc();
 #else
 	  ++base->pc;
 #endif
+	  }else{
+		  base->try_merge=false;
+	  }
 	  baseSearcher->addState(base);
     }  
   }

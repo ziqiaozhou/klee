@@ -128,6 +128,8 @@ namespace klee {
     HANDLER(handlePrintExpr);
     HANDLER(handleMakeShared);
 	HANDLER(handleMakeObservable);
+
+	HANDLER(handleMakeMergeOb);
 	HANDLER(handlePrintRange);
     HANDLER(handleRange);
     HANDLER(handleRealloc);

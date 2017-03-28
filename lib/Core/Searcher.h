@@ -185,7 +185,7 @@ namespace klee {
     std::set<ExecutionState*> statesAtMerge;
     Searcher *baseSearcher;
     llvm::Function *mergeFunction;
-
+	bool if_merge;
   private:
     llvm::Instruction *getMergePoint(ExecutionState &es);
 
@@ -209,14 +209,14 @@ namespace klee {
     Searcher *baseSearcher;
     llvm::Function *mergeFunction;
 
+	bool if_merge;
   private:
     llvm::Instruction *getMergePoint(ExecutionState &es);
 
   public:
     BumpMergingSearcher(Executor &executor, Searcher *baseSearcher);
-    ~BumpMergingSearcher();
-
-    ExecutionState &selectState();
+	~BumpMergingSearcher();
+	    ExecutionState &selectState();
     void update(ExecutionState *current,
                 const std::set<ExecutionState*> &addedStates,
                 const std::set<ExecutionState*> &removedStates);

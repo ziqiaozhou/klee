@@ -110,6 +110,8 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("klee_make_attackerO", handleMakeAttackerO, false),
   add("klee_make_attackerC", handleMakeAttackerC, false),
   add("klee_make_secret", handleMakeSecret, false),
+
+ add("klee_mark_merge",handleMakeMergeOb,false), 
  add("klee_make_observable",handleMakeObservable,false), 
   add("klee_mark_global", handleMarkGlobal, false),
   add("klee_merge", handleMerge, false),
@@ -709,7 +711,7 @@ void SpecialFunctionHandler::handleFree(ExecutionState &state,
                           KInstruction *target,
                           std::vector<ref<Expr> > &arguments) {
   // XXX should type check args
-  assert(arguments.size()==1 &&
+  assert(arguments.size()>=1 &&
          "invalid number of arguments to free");
   executor.executeFree(state, arguments[0]);
 }
@@ -1089,7 +1091,64 @@ void SpecialFunctionHandler::handleThreadNotify(ExecutionState &state,
 		state.notifyAll(cast<ConstantExpr>(wlist)->getZExtValue());
 	}
 }
-#endif 
+#endif
+
+void SpecialFunctionHandler::handleMakeMergeOb(ExecutionState &state,
+			KInstruction *target,
+                                                std::vector<ref<Expr> > &arguments) {
+  std::string name;
+
+  // FIXME: For backwards compatibility, we should eventually enforce the
+  // correct arguments.
+  if (arguments.size() == 2) {
+    name = "unnamed";
+  } else {
+    // FIXME: Should be a user.err, not an assert.
+    assert(arguments.size()==3 &&
+           "invalid number of arguments to klee_make_symbolic");  
+    name = readStringAtAddress(state, arguments[2]);
+  }
+
+  Executor::ExactResolutionList rl;
+  executor.resolveExact(state, arguments[0], rl, "make_symbolic");
+  
+  for (Executor::ExactResolutionList::iterator it = rl.begin(), 
+         ie = rl.end(); it != ie; ++it) {
+    const MemoryObject *mo = it->first.first;
+    mo->setName(name);
+    
+    const ObjectState *old = it->first.second;
+    ExecutionState *s = it->second;
+    
+    if (old->readOnly) {
+      executor.terminateStateOnError(*s, 
+                                     "cannot make readonly object symbolic", 
+                                     "user.err");
+      return;
+    } 
+
+    // FIXME: Type coercion should be done consistently somewhere.
+    bool res;
+    bool success __attribute__ ((unused)) =
+      executor.solver->mustBeTrue(*s, 
+                                  EqExpr::create(ZExtExpr::create(arguments[1],
+                                                                  Context::get().getPointerWidth()),
+                                                 mo->getSizeExpr()),
+                                  res);
+    assert(success && "FIXME: Unhandled solver failure");
+    
+    if (res) {
+		s->addMergeOb(name,mo);
+		//ddexecutor.executeMakeSymbolic(*s, mo, name);
+    } else {      
+      executor.terminateStateOnError(*s, 
+                                     "wrong size given to klee_mark_merge[_name]", 
+                                     "user.err");
+    }
+  }
+}
+
+
 void SpecialFunctionHandler::handleMakeSymbolic(ExecutionState &state,
 			KInstruction *target,
                                                 std::vector<ref<Expr> > &arguments) {

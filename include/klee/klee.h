@@ -35,6 +35,8 @@ extern "C" {
    * output files, etc.
    */
   void klee_make_symbolic(void *addr, size_t nbytes, const char *name);
+
+  void klee_mark_merge(void *addr, size_t nbytes, const char *name);
 void klee_make_shared(void *addr, size_t nbytes);
 void klee_make_secret(void *addr, size_t nbytes, const char *name);
 void klee_make_observable(const char *msg,...);

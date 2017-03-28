@@ -69,7 +69,7 @@ struct StackFrame {
 /// @brief ExecutionState representing a path under exploration
 class ExecutionState {
 	public:
-
+		bool try_merge;
 #if MULTITHREAD
 		typedef std::map<Thread::thread_id_t, Thread> threads_ty;
 		typedef std::map<Thread::wlist_id_t, std::set<Thread::thread_id_t> > wlists_ty;
@@ -87,6 +87,7 @@ public:
   // Execution - Control Flow specific
 
   std::vector<std::tuple<std::string,ref<Expr>>> observables;
+  std::vector<std::pair<std::string,const MemoryObject *> > mergeObs;
   /// @brief Pointer to instruction to be executed after the current
   /// instruction
 #if MULTITHREAD
@@ -253,10 +254,12 @@ public:
   void pushOb(std::string name,ref<Expr>expr){
 	  observables.push_back(std::make_tuple(name,expr));
   }
- 
+ void addMergeOb(std::string name,const MemoryObject * mo){
+	  mergeObs.push_back(std::make_pair(name,mo));
+  }
+
   void addSymbolic(const MemoryObject *mo, const Array *array);
   void addConstraint(ref<Expr> e) { constraints.addConstraint(e); }
-
   bool merge(const ExecutionState &b);
   void dumpStack(llvm::raw_ostream &out) const;
 };
