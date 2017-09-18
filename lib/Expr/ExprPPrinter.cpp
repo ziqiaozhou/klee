@@ -474,9 +474,11 @@ void ExprPPrinter::printSingleExpr(llvm::raw_ostream &os, const ref<Expr> &e) {
   p.print(e, PC);
   //AvoidBindings=false;
 }
- void ExprPPrinter::printAnalyzedConstraints(llvm::raw_ostream &os,
-                                    const ConstraintManager &constraints) {
-  printAnalyzedQuery(os, constraints, ConstantExpr::alloc(false, Expr::Bool));
+void ExprPPrinter::printAnalyzedConstraints(llvm::raw_ostream &os,
+			const ConstraintManager &constraints, const ref<Expr> *evalExprsBegin,
+			const ref<Expr> *evalExprsEnd
+			) {
+	printQuery(os, constraints, ConstantExpr::alloc(false, Expr::Bool),evalExprsBegin,evalExprsEnd);
 }
 
 void ExprPPrinter::printConstraints(llvm::raw_ostream &os,
@@ -683,8 +685,9 @@ void ExprPPrinter::printQuery(llvm::raw_ostream &os,
     p.scan(*it);
   p.scan(q);
 
-  for (const ref<Expr> *it = evalExprsBegin; it != evalExprsEnd; ++it)
+  for (const ref<Expr> *it = evalExprsBegin; it != evalExprsEnd; ++it){
     p.scan(*it);
+  }
 
   PrintContext PC(os);
   
@@ -731,7 +734,7 @@ void ExprPPrinter::printQuery(llvm::raw_ostream &os,
 
   p.printSeparator(PC, constraints.empty(), indent-1);
   p.print(q, PC);
-
+#if 0
   // Print expressions to obtain values for, if any.
   if (evalExprsBegin != evalExprsEnd) {
     p.printSeparator(PC, q->isFalse(), indent-1);
@@ -743,22 +746,24 @@ void ExprPPrinter::printQuery(llvm::raw_ostream &os,
     }
     PC << ']';
   }
-
   // Print arrays to obtain values for, if any.
+ 
   if (evalArraysBegin != evalArraysEnd) {
     if (evalExprsBegin == evalExprsEnd)
       PC << " []";
 
     PC.breakLine(indent - 1);
     PC << '[';
+	
     for (const Array * const* it = evalArraysBegin; it != evalArraysEnd; ++it) {
       PC << (*it)->name;
       if (it + 1 != evalArraysEnd)
         PC.breakLine(indent);
-    }
+    
     PC << ']';
   }
 
+#endif
   PC << ')';
   PC.breakLine();
 }

@@ -446,14 +446,21 @@ Instruction *MergingSearcher::getMergePoint(ExecutionState &es) {
 
   return 0;
 }
-
+int countPrint=0;
 ExecutionState &MergingSearcher::selectState() {
   while (!baseSearcher->empty()) {
     ExecutionState &es = baseSearcher->selectState();
+	if(countPrint==0 && DebugLogMerge){
+	llvm::errs()<<executor.getCurrentLine(&es)<<"\n";
+	}else{
+		countPrint=(countPrint+1)%5000000;
+	}
     if (getMergePoint(es)) {
       baseSearcher->removeState(&es, &es);
       statesAtMerge.insert(&es);
-    } else {
+	} else {
+	
+		//llvm::errs() << "return from select state in mergesearcher: " << &es<<"\n";
       return es;
     }
   }
@@ -585,6 +592,7 @@ ExecutionState &BatchingSearcher::selectState() {
     lastState = &baseSearcher->selectState();
     lastStartTime = util::getWallTime();
     lastStartInstructions = stats::instructions;
+	llvm::errs()<<"KLEE: batching select state "<<lastState<<"\n";
     return *lastState;
   } else {
     return *lastState;

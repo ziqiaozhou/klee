@@ -12,17 +12,25 @@ if [ "x${STP_VERSION}" != "x" ]; then
     mkdir build
     cd build
     MINISAT_DIR=`pwd`
-    cmake -DCMAKE_INSTALL_PREFIX=/usr ..
-    make
-    sudo make install
-    cd ../../
-
-    # Build STP
-    git clone --depth 1 -b "${STP_VERSION}" git://github.com/stp/stp.git src
-    mkdir build
-    cd build
-    # Disabling building of shared libs is a workaround.
-    # Don't build against boost because that is broken when mixing packaged boost libraries and gcc 4.8
+	cmake -DCMAKE_INSTALL_PREFIX=/usr ..
+	make
+	sudo make install
+	cd ../../
+	sudo apt-get install build-essential cmake
+	sudo apt-get install libzip-dev libboost-program-options-dev libm4ri-dev libsqlite3-dev
+	git clone https://github.com/msoos/cryptominisat
+	cd cryptominisat
+	mkdir build && cd build
+	cmake -DUSE_GAUSS=ON ..
+	make
+	sudo make install
+	sudo ldconfig
+	# Build STP
+	git clone --depth 1 -b "${STP_VERSION}" git://github.com/stp/stp.git src
+	mkdir build
+	cd build
+	# Disabling building of shared libs is a workaround.
+	# Don't build against boost because that is broken when mixing packaged boost libraries and gcc 4.8
     cmake -DBUILD_SHARED_LIBS:BOOL=OFF -DENABLE_PYTHON_INTERFACE:BOOL=OFF -DNO_BOOST:BOOL=ON ../src
 
     set +e # Do not exit if build fails because we need to display the log

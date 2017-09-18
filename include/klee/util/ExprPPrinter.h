@@ -61,7 +61,9 @@ namespace klee {
     static void printSingleExpr(llvm::raw_ostream &os, const ref<Expr> &e);
 
     static void printAnalyzedConstraints(llvm::raw_ostream &os,
-				const ConstraintManager &constraints);
+				const ConstraintManager &constraints,
+				 const ref<Expr> *evalExprsBegin = 0,
+                           const ref<Expr> *evalExprsEnd = 0);
     static void printConstraints(llvm::raw_ostream &os,
                                  const ConstraintManager &constraints);
  

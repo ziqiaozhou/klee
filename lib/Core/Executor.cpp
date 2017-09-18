@@ -103,7 +103,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
-
+#include <tuple>
 #include <sys/mman.h>
 
 #include <errno.h>
@@ -4048,7 +4048,12 @@ void Executor::getConstraintLog(const ExecutionState &state, std::string &res,
   case ANALYZE: {
     std::string Str;
     llvm::raw_string_ostream info(Str);
-    ExprPPrinter::printAnalyzedConstraints(info, state.constraints);    
+	std::vector<ref<Expr>>obs;
+	for(int i=0;i<state.observables.size();++i){
+		obs.push_back(std::get<1>(state.observables[i]));
+		klee_warning("put ob into analyzer print");
+;	}
+    ExprPPrinter::printAnalyzedConstraints(info, state.constraints,&obs[0],&obs[0]+state.observables.size());    
 	
 	//llvm::raw_ostream *os = openTestFile("tree",0);
 	//processTree->dump(*os);
