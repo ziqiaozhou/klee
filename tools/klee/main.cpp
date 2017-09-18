@@ -498,12 +498,20 @@ void KleeHandler::processTestCase(const ExecutionState &state,
 	llvm::raw_string_ostream obstrs(obstr);
 
 	if(WriteObservable){
+		std:: string declarestr="";
+		llvm::raw_string_ostream declarestrs(declarestr);
+
 		llvm::raw_ostream *f = openTestFile("observable", id);
 		*f<<"test\n";
+		for(auto it : state.symbolics){
+			//	  MemoryObject* mo=std::get<0>(it);
+			declarestrs<<"array "<<it.second->name<<"["<<it.second->size<<"]: w32 -> w8 = symbolic\n";
+		}
+
 		for(unsigned i=0;i<state.observables.size();i++){
 			obstrs<<"(Eq "<<std::get<0>(state.observables[i])<<" "<<std::get<1>(state.observables[i])<<")\n";
 		}
-		*f<<obstrs.str();
+		*f<<declarestrs.str()<<"(query["<<obstrs.str()<<"]\n false)";
 
 		delete f;
 	}
@@ -512,7 +520,11 @@ void KleeHandler::processTestCase(const ExecutionState &state,
 		std::string constraints;
 		std:: string declarestr="";
 		llvm::raw_string_ostream declarestrs(declarestr);
-		m_interpreter->getConstraintLog(state, constraints,Interpreter::KQUERY);
+
+		if(WriteAnalyzedPCs)
+		  m_interpreter->getConstraintLog(state, constraints,Interpreter::ANALYZE);
+		else
+		  m_interpreter->getConstraintLog(state, constraints,Interpreter::KQUERY);
 		llvm::raw_ostream *f = openTestFile("pc", id);
 		for(auto it : state.symbolics){
 			//	  MemoryObject* mo=std::get<0>(it);
@@ -527,13 +539,13 @@ void KleeHandler::processTestCase(const ExecutionState &state,
 		delete f2;
 		f2=NULL;
 	}
-	if(WriteAnalyzedPCs){
+/*	if(WriteAnalyzedPCs){
 		std::string constraints;
 		m_interpreter->getConstraintLog(state, constraints,Interpreter::ANALYZE);
 		llvm::raw_ostream *f = openTestFile("apc", id);
 		*f << constraints;
 		  delete f;
-	  }
+	  }*/
     if (WriteCVCs) {
       // FIXME: If using Z3 as the core solver the emitted file is actually
       // SMT-LIBv2 not CVC which is a bit confusing

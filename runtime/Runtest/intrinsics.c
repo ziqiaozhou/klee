@@ -141,5 +141,7 @@ int klee_range(int begin, int end, const char* name) {
 
 /* not sure we should even define.  is for debugging. */
 void klee_print_expr(const char *msg, ...) { }
-
+void klee_make_observable(const char *msg, ...){};
+void klee_alias_function(const char* o,const char* n){};
+  void klee_define_fixed_object(void *addr, size_t nbytes){}
 void klee_set_forking(unsigned enable) { }

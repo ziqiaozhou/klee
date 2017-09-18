@@ -91,6 +91,7 @@ static llvm::cl::opt<std::string>
 				  cl::desc("specify the out pc file"),
 				  cl::value_desc("out file"),
 				  cl::init("result.pc"));
+static llvm::cl::opt<bool> Stdout("stdout",cl::desc("set cout as output"),cl::init(false));
 static llvm::cl::opt<int> Bound("bound",cl::desc("specify bound for eval"),cl::init(1));
   enum BuilderKinds {
     DefaultBuilder,
@@ -500,6 +501,58 @@ static bool EvaluateInputASTOrOtherPC(const char *Filename,
   QC->dump2file(f);
   f->close();
   delete f;
+	ExprSMTLIBPrinter printer;
+	
+	llvm::raw_fd_ostream * f2=NULL;
+	if(Stdout){
+		printer.setOutput(llvm::outs());
+	}else{
+	std::string path=OutPath+".smt2";
+
+	std::string Error; 
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
+	f2 = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_None);
+#elif LLVM_VERSION_CODE >= LLVM_VERSION(3,4)
+	f2 = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_Binary);
+#else
+	f2 = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::raw_fd_ostream::F_Binary);
+#endif
+	if(!Error.empty()){
+		llvm::errs()<<"cannot open file"<<Error<<"\n";
+		return 0;
+	}
+
+	printer.setOutput(*f2);
+	}
+	//Loop over the declarations
+			//print line break to separate from previous query
+
+			//Output header for this query as a SMT-LIBv2 comment
+
+			/* Can't pass ConstraintManager constructor directly
+			 * as argument to Query object. Like...
+			 * query(ConstraintManager(QC->Constraints),QC->Query);
+			 *
+			 * For some reason if constructed this way the first
+			 * constraint in the constraint set is set to NULL and
+			 * will later cause a NULL pointer dereference.
+			 */
+			ConstraintManager constraintM(QC->Constraints);
+			llvm::outs()<<"new query";
+			Query query(constraintM,QC->Query);
+			llvm::outs()<<"set query";
+			printer.setQuery(query);
+			llvm::outs()<<"after set query";
+			if(!QC->Objects.empty())
+				printer.setArrayValuesToGet(QC->Objects);
+			llvm::outs()<<"generate output";
+			printer.generateOutput();
+
+	delete P;
+	if(f2){
+	f2->close();
+	delete f2;
+	}
   return success;
 }
 
@@ -609,6 +662,8 @@ static bool EvaluateInputASTWithOtherPC(const char *Filename,
 	  QC->dump2file(f);
 	  f->close();
 	  delete f;
+
+
 	  if(!evaluate){
 		  return 1;
 	  }
@@ -816,8 +871,15 @@ static bool printInputAsSMTLIBv2(const char *Filename,
 
 	if (!success)
 	  return false;
+
+	ExprSMTLIBPrinter printer;
+	
+	llvm::raw_fd_ostream * f=NULL;
+	if(Stdout){
+		printer.setOutput(llvm::outs());
+	}else{
 	std::string path=OutPath;
-	llvm::raw_fd_ostream * f;
+
 	std::string Error; 
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
 	f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_None);
@@ -830,9 +892,9 @@ static bool printInputAsSMTLIBv2(const char *Filename,
 		llvm::errs()<<"cannot open file"<<Error<<"\n";
 		return 0;
 	}
-	ExprSMTLIBPrinter printer;
-	printer.setOutput(*f);
 
+	printer.setOutput(*f);
+	}
 	unsigned int queryNumber = 0;
 	//Loop over the declarations
 	for (std::vector<Decl*>::iterator it = Decls.begin(), ie = Decls.end(); it != ie; ++it)
@@ -855,12 +917,14 @@ static bool printInputAsSMTLIBv2(const char *Filename,
 			 * will later cause a NULL pointer dereference.
 			 */
 			ConstraintManager constraintM(QC->Constraints);
+			llvm::outs()<<"new query";
 			Query query(constraintM,QC->Query);
+			llvm::outs()<<"set query";
 			printer.setQuery(query);
-
+			llvm::outs()<<"after set query";
 			if(!QC->Objects.empty())
 				printer.setArrayValuesToGet(QC->Objects);
-
+			llvm::outs()<<"generate output";
 			printer.generateOutput();
 
 
@@ -873,8 +937,10 @@ static bool printInputAsSMTLIBv2(const char *Filename,
 			ie = Decls.end(); it != ie; ++it)
 		delete *it;
 	delete P;
+	if(f){
 	f->close();
 	delete f;
+	}
 	return true;
 }
 
