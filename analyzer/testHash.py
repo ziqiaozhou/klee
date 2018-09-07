@@ -1,3 +1,4 @@
+from functools import partial
 from joblib import Parallel, delayed
 import types
 import copy_reg
@@ -10,14 +11,53 @@ import sys
 import time
 import math
 import os
+import re
 from pyparsing import nestedExpr
 import filecmp
 import itertools
 from modelCount import WeightMC
-def LOG(filename,str):
-    f=open(filename,'a+')
-    f.write(str)
+from reduceMap import simplifyPC,printOutput
+printALL=False
+def isExpChanged(exp):
+    ops=["Add" ,"Sub" , "Mul" , "UDiv" , "URem" , "SDiv" ,"SRem","And" , "Or" , "Xor" , "Shl" , "LShr" , "AShr"]
+    for op in ops:
+        if exp.find(op)>=0:
+            return True
+    return False
+
+def weightMCPara(Dir,secretlst,deplst,epsilon,sigma,pcfile):
+    return [pcfile,WeightMC(secretlst,deplst,epsilon,sigma,Dir+pcfile)]
+def convertIndex2File(Dir,index,suffix='.pc'):
+    index=str(index)
+    if os.path.isfile(Dir+index+suffix):
+        return index+suffix
+    return 'test'+'0'*(6-len(index))+index+suffix
+def readCountLst(secretfile):
+    lst=[]
+    f=open(secretfile)
+    for line in f:
+        line=line.replace('\n','')
+        print line
+        symindex=line.replace(']','').split('[')
+        if len(symindex)<2:
+            continue
+        sym=symindex[0]
+        index=symindex[1]
+        if index=='.*':
+            lst.append(sym+'\[.*\]')
+        else:
+            indexs=index.split(':')
+            start=int(indexs[0])
+            end=int(indexs[1])
+            for i in range(start,end+1):
+                lst.append(sym+'\['+str(i)+'\]')
     f.close()
+    return lst
+
+def LOG(filename,str):
+        f=open(filename,'a+')
+        f.write(str)
+        f.close()
 def findsubsets(S,m):
     return set(itertools.combinations(S, m))
 def getPCbyNum(num,numPC,numIndex):
@@ -250,17 +290,15 @@ class Parser:
         self.structDir=structDir
         self.symbol_type=self.loadDef(self.symbolfile)
         self.linuxfolder=linuxfolder0
-
-    def parseOb(self,obpath):
-        outpath=obpath.replace('.observable','.ob')
+    
+    def parseOb(self,obpath,subfix='.ob'):
+        outpath=obpath.replace('.observable',subfix)
         obpath=self.pathDir+obpath;
         outpath=self.outDir+outpath;
         if os.path.exists(outpath):
             return
         obfile=open(obpath)
-        
         of=open(outpath,'w+')
-        
         allline=[]
         for line in obfile:
             allline.append(line)
@@ -272,34 +310,49 @@ class Parser:
             while line.count('(')>line.count(')'):
                 index=index+1
                 line=line+" "+allline[index]
+            line=line.replace('.mibs','')#only for this exanples
+            #print line
             pair=line.split(': ')
+            pair[0]=pair[0].replace(" ","")
             index=index+1
             if count.has_key(pair[0]):
                 count[pair[0]]=count[pair[0]]+1
             else:
                 count[pair[0]]=0
+            #print pair[0],count[pair[0]]
             key=pair[0]+'['+str(count[pair[0]])+']'
+
+            readkey='(ReadLSB w64 '+str(count[pair[0]]*8)+' '+pair[0]+'_output'+')'
             #print pair[1]
-            path_str=pair[1].replace('\n',' ')
-            exprs=nestedExpr(opener='(',closer=')').parseString(path_str).asList()
+            expr_str=pair[1].replace('\n',' ')
+            expr_str=re.sub(' +',' ',expr_str)
+            exprs=nestedExpr(opener='(',closer=')').parseString(expr_str).asList()
             result=self.printNested(of,exprs,False,True)
-            result0=result[0][0]
-            result0=result0.replace('(','').replace(')','')
-            if not result0.startswith(key):
-                of.write(key+":"+str(result[0])+"\n")
+            '''exprs=nestedExpr(opener='(',closer=')').parseString(readkey).asList()
+            result_readkey=self.printNested(of,exprs,False,True)
+            key=result_readkey[0][0]'''
+            result0=str(result)
+            #print 'result0=', result0,'key=', key
+            print "result0=",result0
+            if isExpChanged(result0):
+                of.write('(Eq '+readkey+' '+expr_str+")\n")
+        for key in count:
+            size=(count[key]+1)*8
+            declare='array '+key+'['+str(size)+'] : w32 -> w8 = symbolic\n'+'array '+key+'_output'+'['+str(size)+'] : w32 -> w8 = symbolic'
+            of.write(declare+'\n')
         obfile.close()
         of.close()
 
     def parseResultPal(self,lst):
         for pathfile in lst:
             self.parseOb(self.outDir+pathfile)
-    def parseResult(self):
+    def parseResult(self,subfix='.ob'):
         num_cores = multiprocessing.cpu_count() 
         allpaths=[]
         for pathfile in os.listdir(self.pathDir):
             if pathfile.endswith(".observable"):
                 allpaths.append(pathfile)
-        Parallel(n_jobs=num_cores)(delayed(self.parseOb)(pathfile) for pathfile in allpaths)
+        Parallel(n_jobs=min(num_cores,len(allpaths)))(delayed(self.parseOb)(pathfile,subfix) for pathfile in allpaths)
 
     def legalName(self,name):
         new=str(name);
@@ -403,21 +456,21 @@ class Parser:
     def checkClass(self,Dir,filename):
         count=len(self.Class)
         for i in range(0,count):
-            candidate=Dir+self.Class[i][0]+'.ob'
+            candidate=Dir+self.Class[i][0]+'.obpc'
             if filecmp.cmp(candidate,Dir+filename):
-                self.Class[i].append(filename.replace('.ob',''))
+                self.Class[i].append(filename.replace('.obpc',''))
                 return True
         return False
 
     def classifyOb(self,printAll=False):
-        Dir=self.pathDir+"result/"
+        Dir=self.outDir
         for pathfile in os.listdir(Dir):
-            if pathfile.endswith('.ob'):
+            if pathfile.endswith('.obpc'):
                 if not self.checkClass(Dir,pathfile):
-                    self.Class.append([pathfile.replace('.ob','')])
+                    self.Class.append([pathfile.replace('.obpc','')])
         classfile=Dir+"result.class"
         cf=open(classfile,'w+')
-        if(printALL):
+        if(printAll):
             cf.write('\n'.join([' '.join(one)+":"+str(open(self.outDir+one[0]+'.ob').read()) for one in self.Class]))
         else:
             cf.write('\n'.join([' '.join(one) for one in self.Class]))
@@ -447,8 +500,24 @@ class Parser:
             if f.startswith(prefix) and f.endswith('err'):
                 return True
         return False
-    def mergeAllPC(self,outfile,suffix):
-        Dir=self.outDir
+
+    def trimMergedPC(self,mergedfile):
+        f=open(mergedfile)
+        declare=[]
+        query=[]
+        for line in f:
+            if line.startswith('array'):
+                declare.append(line)
+            else:
+                query.append(line)
+        f.close()
+        setdeclare=set(declare)
+        f=open(mergedfile,'w')
+        write=''.join(list(setdeclare))+''.join(query)
+        f.write(write)
+        f.close()
+
+    def mergeAllPC(self,outfile,Dir,suffix):
         allfiles={}
         for pathfile in os.listdir(Dir):
             if pathfile.endswith(suffix):
@@ -461,9 +530,25 @@ class Parser:
                 allfiles[Dir+pathfile]=size
         mergedfiles=sorted(allfiles,key=lambda k: allfiles[k])
         opt=' -link-pc-file='
-        command='kleaver -evaluate-or -out='+outfile+' -link-pc-file='+opt.join(mergedfiles[2:])+' '+mergedfiles[1]
+        if(len(mergedfiles)>=2):
+            command='kleaver -evaluate-or -out='+outfile+' -link-pc-file='+opt.join(mergedfiles[1:])+' '+mergedfiles[0]
+        else:
+            command='kleaver -evaluate-or -out='+outfile+' '+mergedfiles[0]
+
         print command
         result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
+        self.trimMergedPC(outfile)
+        extra=""
+        fix=int(math.pow(2,30))
+        #extra='(Eq (ReadLSB w32 16 skb.cb) '+str(fix)+')'
+        f=open(outfile)
+        read=f.read()
+        f.close()
+        querystart=read.find('query [')+len('query [')
+        write=read[:querystart]+extra+'\n'+read[querystart:]
+        f=open(outfile,'w+')
+        f.write(write)
+        f.close()
 
     def mergePC(self,suffix):
         f=open(self.outDir+'result.class')
@@ -477,7 +562,9 @@ class Parser:
             allObs.append(obfiles)
         f.close()
         mainfile=allObs[0]
-        for index in range(0,len(allObs)):
+        numObs=len(allObs)
+        ObByte=int(math.ceil(math.log(numObs,2)/8))
+        for index in range(0,numObs):
             obfiles=allObs[index]
             numOb=len(obfiles)
             iterative=0
@@ -496,36 +583,45 @@ class Parser:
                     #result=subprocess.check_output('kleaver -evaluate '+ob+'.tmp',stderr=subprocess.STDOUT,shell=True)
                     if result.find("Error")>0:
                         print "allert"
-                mergedfile=self.mergedDir+str(index)+'.mergedpc'
-                command=command+' -out='+self.mergedDir+str(index)+'.mergedpc'+' '+self.outDir+str(int(obfiles[iterative-1].replace('test','')))+suffix
-                result=subprocess.check_output(command,shell=True)
-                f=open(mergedfile)
-                declare=[]
-                query=[]
-                for line in f:
-                    if line.startswith('array'):
-                        declare.append(line)
-                        setdeclare=set(declare)
-                    else:
-                        query.append(line)
-                f.close()
-                f=open(mergedfile,'w')
-                f.write(''.join(list(setdeclare))+''.join(query))
-                f.close()
-                hasError=False
-                '''  try:
-                    result=subprocess.check_output('kleaver -evaluate '+mergedfile,stderr=subprocess.STDOUT,shell=True)
-                    if result.find("Error")>0:
-                        hasError=True
-                        print mergedfile,'!!!error!!!'
-                        print command
-                    else:
-                        hasError=False;
-                        print "good"
-                except:
+            mergedfile=self.mergedDir+str(index)+'.mergedpc'
+            command=command+' -out='+mergedfile+' '+self.outDir+str(int(obfiles[iterative-1].replace('test','')))+suffix
+            result=subprocess.check_output(command,shell=True)
+            f=open(mergedfile)
+            declare=[]
+            query=[]
+            for line in f:
+                if line.startswith('array'):
+                    declare.append(line)
+                else:
+                    query.append(line)
+            f.close()
+            setdeclare=set(declare)
+            f=open(mergedfile,'w')
+            obdeclare='array observable['+str(ObByte)+'] : w32 -> w8 = symbolic\n'
+            setdeclare.add(obdeclare)
+            write=''.join(list(setdeclare))+''.join(query)
+            querystart=write.find('query [')+len('query [')
+            write=write[:querystart]+'(Eq (ReadLSB w'+str(int(ObByte*8))+' 0 observable) '+str(index)+")\n"+write[querystart:]
+            f.write(write)
+            f.close()
+            hasError=False
+            '''  try:
+                result=subprocess.check_output('kleaver -evaluate '+mergedfile,stderr=subprocess.STDOUT,shell=True)
+                if result.find("Error")>0:
                     hasError=True
-                   # pause();
-                    print 'bad'+command'''
+                    print mergedfile,'!!!error!!!'
+                    print command
+                else:
+                    hasError=False;
+                    print "good"
+            except:
+                hasError=True
+               # pause();
+                print 'bad'+command'''
+
+
+
+
     def createPCstoSolveAttacker(self,secretFile,Dir,suffix='.attacker',Individual=True):
         f=open(secretFile)
         nonsecretSym=[]
@@ -537,6 +633,7 @@ class Parser:
         f.close()
         for pcfile in os.listdir(self.pathDir):
             if pcfile.endswith('.pc'):
+                print pcfile
                 f=open(self.pathDir+pcfile)
                 index=int(pcfile[len('test'):pcfile.find('.pc')])
                 fstr=f.read();
@@ -551,16 +648,196 @@ class Parser:
                             fstr=fstr.replace(symbolName,legal)
                         sym=legal
                         if not sym in nonsecretSym:
-                           # print sym, sym+str(index)
+                       # print sym, sym+str(index)
                             if Individual:
                                 fstr=fstr.replace(sym,sym+str(index))
-                        else:
-                            attackers.append(sym)
+                            else:
+                                attackers.append(sym)
                     else:
                         break
                 last=fstr.rfind(')')
                 fstr=fstr[:last]+" [] ["+' '.join(attackers)+'] '+fstr[last:]
                 allIndex.append(index);
+                nf=open(Dir+str(index)+suffix,'w+')
+                nf.write(fstr)
+                nf.close();
+                f.close()
+    
+    
+    def createPCstoSolveAttackerWithObClass(self,secretFile,Dir,suffix='.attacker',Individual=True):
+        f=open(self.outDir+'result.class')
+        allObs=[]
+        index=-1
+        classgroup={}
+        for line in f:
+            index=index+1
+            obfiles=line.split()
+            for pc in obfiles:
+                if self.checkError(pc):
+                    print 'error',pc
+                    #obfiles.remove(pc)
+                else:
+                    classgroup[pc]=index
+            #allObs.append(obfiles)
+        f.close()
+        print classgroup
+        numObs=index+1
+        print numObs
+        ObByte=int(math.ceil(math.log(numObs,2)/8))
+
+        f=open(secretFile)
+        nonsecretSym=[]
+        index=0
+        allIndex=self.allIndex
+        for line in f:
+            nonsecretSym.append(line.strip())
+        print "nonsecretsym=",nonsecretSym
+        f.close()
+        for pcfile in os.listdir(self.pathDir):
+            print "scan",pcfile
+            if pcfile.endswith('.pc') and not self.checkError(pcfile.replace('.pc','')):
+                print pcfile
+                f=open(self.pathDir+pcfile)
+                if pcfile.find("test")>=0:
+                    index=int(pcfile[len('test'):pcfile.find('.pc')])
+                else:
+                    index=pcfile.replace(".pc","")
+                fstr=f.read();
+                f.close();
+                f=open(self.pathDir+pcfile)
+                attackers=[]
+                for line in f:
+                    if line.startswith('array'):
+                        symbolName=line[line.find(' ')+1:line.find('[')]
+                        legal=self.legalName(symbolName)
+                        if not legal==symbolName:
+                            fstr=fstr.replace(symbolName,legal)
+                        sym=legal
+                        if not sym in nonsecretSym:
+                       # print sym, sym+str(index)
+                            if Individual:
+                                fstr=fstr.replace(sym,sym+str(index))
+                            else:
+                                attackers.append(sym)
+                    else:
+                        break
+                last=fstr.rfind(')')
+                fstr=fstr[:last]+" [] ["+' '.join(attackers)+'] '+fstr[last:]
+                allIndex.append(index);
+                obpc=''
+                declare=''
+                obdeclare='array observable['+str(ObByte)+'] : w32 -> w8 = symbolic\n'
+                declare=declare+(obdeclare)
+                classid=classgroup[pcfile.replace('.pc','')]
+                obpc='(Eq (ReadLSB w'+str(int(ObByte*8))+' 0 observable) '+str(classid)+")\n"
+                querystart=fstr.find('(query [')+len('(query [')
+                fstr=declare+fstr[:querystart]+obpc+fstr[querystart:]
+                '''while(True):
+                    line=obfile.readline()
+                    if len(line)==0:
+                        return;
+                    one=line
+                    while not one.count('(')==one.conut(')'):
+                        one=one+obfile.readline()
+                obfile.close()
+                for ob in changedoblst:
+                    pair=ob.split(':')
+                    sym=pair[0]
+                    expr=pair[1]'''
+                nf=open(Dir+str(index)+suffix,'w+')
+                nf.write(fstr)
+                nf.close();
+                f.close()
+
+
+    def createPCstoSolveAttackerWithObpc(self,secretFile,Dir,suffix='.attacker',Individual=True):
+        f=open(self.outDir+'result.class')
+        allObs=[]
+        index=-1
+        classgroup={}
+        for line in f:
+            index=index+1
+            obfiles=line.split()
+            for pc in obfiles:
+                if self.checkError(pc):
+                    print 'error',pc
+                    #obfiles.remove(pc)
+                else:
+                    classgroup[pc]=index
+            #allObs.append(obfiles)
+        f.close()
+        print classgroup
+        numObs=index+1
+        ObByte=int(math.ceil(math.log(numObs,2)/8))
+
+        f=open(secretFile)
+        nonsecretSym=[]
+        index=0
+        allIndex=self.allIndex
+        for line in f:
+            nonsecretSym.append(line.strip())
+        print nonsecretSym
+        f.close()
+        for pcfile in os.listdir(self.pathDir):
+            print pcfile
+            if pcfile.endswith('.pc') and not self.checkError(pcfile.replace('.pc','')):
+                print pcfile
+                f=open(self.pathDir+pcfile)
+                if pcfile.find('test')>=0:
+                    index=int(pcfile[len('test'):pcfile.find('.pc')])
+                else:
+                    index=int(pcfile.replace('.pc',''))
+                fstr=f.read();
+                f.close();
+                f=open(self.pathDir+pcfile)
+                attackers=[]
+                for line in f:
+                    if line.startswith('array'):
+                        symbolName=line[line.find(' ')+1:line.find('[')]
+                        legal=self.legalName(symbolName)
+                        if not legal==symbolName:
+                            fstr=fstr.replace(symbolName,legal)
+                        sym=legal
+                        if not sym in nonsecretSym:
+                       # print sym, sym+str(index)
+                            if Individual:
+                                fstr=fstr.replace(sym,sym+str(index))
+                            else:
+                                attackers.append(sym)
+                    else:
+                        break
+                last=fstr.rfind(')')
+                fstr=fstr[:last]+" [] ["+' '.join(attackers)+'] '+fstr[last:]
+                allIndex.append(index);
+                obfile=open(self.outDir+convertIndex2File(self.outDir,index,'.obpc'))
+                obpc=''
+                declare=''
+                print obfile
+                for line in obfile:
+                    if  line.startswith('('):
+                        obpc=obpc+line
+                    elif line.startswith('array'):
+                        declare=declare+line
+                    else:
+                        continue
+                declare=declare
+                classid=classgroup[pcfile.replace('.pc','')]
+                obfile.close();
+                querystart=fstr.find('(query [')+len('(query [')
+                print "fstr",fstr
+                fstr=declare+fstr[:querystart]+obpc+fstr[querystart:]
+                '''while(True):
+                    line=obfile.readline()
+                    if len(line)==0:
+                        return;
+                    one=line
+                    while not one.count('(')==one.conut(')'):
+                        one=one+obfile.readline()
+                obfile.close()
+                for ob in changedoblst:
+                    pair=ob.split(':')
+                    sym=pair[0]
+                    expr=pair[1]'''
                 nf=open(Dir+str(index)+suffix,'w+')
                 nf.write(fstr)
                 nf.close();
@@ -742,24 +1019,73 @@ class Parser:
                     f.write(read)
                     f.close()
 
+    def countDemo(self):
+        core=16
+        Dir=self.mergedDir
+        resultf=open(Dir+'secret.count','w+')
+        deplst=readCountLst(self.structDir+'depSym.cnf')
+        secretlst=readCountLst(self.structDir+'countSym.cnf')
+        testSet=[]
+        for pcfile in os.listdir(self.outDir):
+            if not pcfile.endswith('.pc0'):
+                continue
+            prefix=pcfile.replace('.pc0','')
+            if self.checkError(prefix):
+                continue
+            testSet.append(pcfile)
+        lock=multiprocessing.Lock()
+	pool = multiprocessing.Pool(processes=16)
+        weightMCPara(Dir,secretlst,deplst,0.5,0.9,'all.pc')
+	'''func = partial(weightMCPara,self.outDir,secretlst,0.5,0.9) 
+	#pool.map(func, range(0,t))
+        for result in pool.imap_unordered(func,testSet):
+            filename=result[0]
+            count=result[1]
+            resultf.write(filename+'\t{'+','.join(secretlst)+'}\t'+str(count)+'\n')
+        resultf.close()'''
+    def simplifyAllPC(self,Dir,suffix='.pc0'):
+	concerned={'result':range(0,8),'v0_seed_0':range(0,16)}
+        #concerned=readCountLst(self.structDir+'countSym.cnf')
+        for pathfile in os.listdir(Dir):
+            if pathfile.endswith(suffix):
+                index=pathfile.replace(suffix,'')
+                check='test'+'0'*(6-len(index))+index
+                if self.checkError(check):
+                    continue
+                #command='kleaver  -out='+Dir+pathfile+" "+Dir+pathfile
+                #result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
+                simplifyPC(Dir+pathfile,concerned)
+        printOutput()
  
+
 if len(sys.argv)>1:
     os.system('export PATH=$PATH:/playpen/ziqiao/usr/bin/;export LD_LIBRARY_PATH=/playpen/ziqiao/usr/lib')
-    
-    parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
-    #parse.mergePC('.pc0')
-    #parse.mergeAllPC(parse.mergedDir+'all.pc','.pc0')
+    #parse=Parser("/playpen/ziqiao/2project/klee/examples/linux-3.18.37/klee-last/","symbol.def","/playpen/ziqiao/2project/klee/examples/linux-3.18.37/","linux/")
+    parse=Parser("/playpen/ziqiao/2project/examples/klee-last/","prng-small/symbol.def","","prng-small/")
+
+    #parse.parseResult('.obpc')
+
+
+    #parse.classifyOb()
+    #parse.createPCstoSolveAttackerWithObpc('linux/assignAttacker.pc',parse.outDir,'.pc0',False);
+    #parse.simplifyAllPC(parse.outDir,'.pc0')
+
+
+   # parse.mergePC('.pc0')
+   # parse.mergeAllPC(parse.mergedDir+'all.pc',parse.outDir,'.pc0.simp')
+    #parse.mergeAllPC(parse.mergedDir+'all.pc',parse.mergedDir,'.mergedpc')
+    parse.countDemo();
+
+    #
     #parse.cleanDup( parse.mergedDir+'all.pc')
     #parse.formatHashFile()
-    count=WeightMC(parse.mergedDir+'3.mergedpc',int(math.pow(2,32)-math.pow(2,10)),int(sys.argv[1]))
-   # parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.attacker',True);
-    #parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.pc0',False);
+      # parse.createPCstoSolveAttacker('linux/assignAttacker.pc',parse.outDir,'.attacker',True);
+
     #parse.formatAll(parse.outDir,'.attacker');
    # parse.testKleaver(parse.outDir+'50.pc0',50)
     #parse.parseOb('test000095.observable')
     #parse.solveA('.attacker0');
-    #parse.parseResult()
-    #parse.classifyOb()
+       #parse.classifyOb()
    #parse.parseAll()
 
         

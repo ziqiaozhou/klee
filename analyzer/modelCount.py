@@ -14,20 +14,26 @@ import os
 from pyparsing import nestedExpr
 import filecmp
 import itertools
+from reduceMap import simplifyCNF
 maxMHash=32
+core=16
 structDir='/playpen/ziqiao/2project/klee/analyzer/linux/'
+Kleaver="kleaver -use-cex-cache --use-forked-solver"
 def pause():
     programPause = raw_input("Press the <ENTER> key to continue...")
-def createHashFile(i,pcfile,val,attackerVal,it):
+def createHashFile(i,pcfile,val,attackerVal,lock,it):
     hashfile= structDir+'hash_'+str(i)+'.pc'
     print hashfile
     tryAgain=True
     while tryAgain:
         try:
+
+            lock.acquire()
             f=open(structDir+'hash_'+str(i)+'.pc')
             read=f.read();
             allline0=read.split('\n')
             f.close()
+            lock.release()
             tryAgain=False
         except:
             print 'try again for'+hashfile
@@ -44,7 +50,7 @@ def createHashFile(i,pcfile,val,attackerVal,it):
 
 
 def solve(pcfile):
-    runcommand='kleaver -evaluate '+pcfile
+    runcommand=Kleaver+' -evaluate '+pcfile
     result=subprocess.check_output(runcommand,stderr=subprocess.STDOUT,shell=True)
     if result.find('INVALID')>0:
         example={}
@@ -110,7 +116,7 @@ def BSAT0(pcfile,pivot,r,wmax,S):
         wmin=min(wmin,w)
     print len(Y)
     return [Y,wmin*r]
-def BSAT1(pcfile,pivot,r,wmax,S):
+def BSAT(pcfile,pivot,r,wmax,S):
     runcommand="kleaver -evaluate-bound -bound="+str(pivot+1)+' '+pcfile
     result=subprocess.check_output(runcommand,stderr=subprocess.STDOUT,shell=True)
     lines=result.split('\n')
@@ -120,7 +126,7 @@ def BSAT1(pcfile,pivot,r,wmax,S):
             count=int(pair[1])
             break;
     return [count,r]
-def BSAT(pcfile,pivot,r,wmax,S):
+def BSAT2(pcfile,pivot,r,wmax,S):
     f=open(pcfile)
     read=f.read()
     f.close()
@@ -145,7 +151,7 @@ def BSAT(pcfile,pivot,r,wmax,S):
     nsym=len(syms)
     finalpcfile= pcfile+'tmp'
 
-    command='kleaver -evaluate-and -out='+pcfile+'tmp'
+    command=Kleaver+' -evaluate-and -out='+pcfile+'tmp'
     for i in range(0,pivot+1):
         newquery=query
         newdeclare=[]
@@ -180,13 +186,19 @@ def BSAT(pcfile,pivot,r,wmax,S):
 
 
 
-def WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,it):
+def WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,lock,it):
 	newpcfile=pcfile+'.tmp'+str(it)
 	tryAgain=True
+
 	while(tryAgain):
 		try:
 			tryAgain=False
+                        print 'wait for lock'
+                        lock.acquire()
+
+                        print 'got for lock'
 			os.system('cp '+pcfile+' '+newpcfile)
+                        lock.release()
 		except:
 			print 'try again'
 	'''result=BSAT(newpcfile,pivot, r,wmax,S)
@@ -203,12 +215,14 @@ def WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmHash,it):
 			print i
 			i=i+1
 			alpha=int(random.getrandbits(i))
-			newhashfile=createHashFile(i,pcfile,alpha,attackerVal,it)
+			newhashfile=createHashFile(i,pcfile,alpha,attackerVal,lock,it)
 			newpcfile=pcfile+str(it)+'.tmp_'+str(i)
-			command='kleaver -evaluate-and -out='+newpcfile+' -link-pc-file='+pcfile+' '+newhashfile
-			#command='kleaver -evaluate-and -out='+newpcfile+' '+newhashfile
-
+			command=Kleaver+' -evaluate-and -out='+newpcfile+' -link-pc-file='+pcfile+' '+newhashfile
+			#command=Kleaver+' -evaluate-and -out='+newpcfile+' '+newhashfile
+                        lock.acquire()
 			result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
+                        lock.release()
+                        print "start BSAT"
 			result=BSAT(newpcfile,pivot, r,wmax,S)
 			wY=result[0]
 			wmax=result[1]
@@ -241,9 +255,13 @@ import multiprocessing
 from functools import partial
 def weightMCOnce(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative):
     print 'hi'+str(iterative)
-    return WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmhash,iterative)
+    return WeightMCCore(pcfile,S,pivot,r,wmax,attackerVal,startmhash,lock,iterative)
 import datetime
-def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
+
+def init_child(lock_):
+        global lock
+        lock = lock_
+def WeightMC0(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
 	count=0
 	C=[]
 	wmax=1
@@ -253,9 +271,11 @@ def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
 	t=35*math.log(3/sigma,2)
 	t=int(t)
 	print t
-	startmHash=24
-	pool = multiprocessing.Pool(processes=core)
-	func = partial(weightMCOnce, pcfile,S,pivot,r,wmax,attackerVal,startmHash) 
+	startmHash=26
+        lock=multiprocessing.Lock()
+	pool = multiprocessing.Pool(processes=core,initializer=init_child, initargs=(lock,))
+
+	func = partial(WeightMCOnce, pcfile,S,pivot,r,wmax,attackerVal,startmHash) 
 	#pool.map(func, range(0,t))
 	outf=open('result'+str(datetime.datetime.now().time()),'w+')
 	for result in pool.imap_unordered(func,range(0,t)):
@@ -281,4 +301,78 @@ def WeightMC(pcfile,attackerVal=100,core=8,epsilon=0.5,sigma=0.2,S=[],r=1):
 	pool.close()
 	pool.join()
 
+def checkInLst(sym,lst):
+	for one in lst:
+            print one,sym
+            if re.match(one,sym,re.DOTALL):
+                print 'True'
+                return True
+	return False
+
+def setIndCNF(cnffile,secretlst,deplst):
+    file=open(cnffile)
+    content=file.read();
+    file.close()
+    declares=content[content.find('c array'):].split('\n')
+    inds=[]
+    deps=[]
+    newcontent=""
+    for declare in declares:
+        declare=re.sub(' +',' ',declare)
+        ones=declare.split(' ')
+        if len(ones)>3:
+            #one[0]=='c'
+            symbolindex=ones[1].split('_')
+            l=len(symbolindex)
+            symbol='_'.join(symbolindex[1:l-1])
+            if checkInLst(symbol, secretlst):
+                ind=' '.join(ones[2:])
+                inds.append(ind)
+                newcontent=newcontent+'c ind '+ind+' 0\n'
+            elif checkInLst(symbol,deplst):
+                dep=' '.join(ones[2:])
+                deps.append(dep)
+                newcontent=newcontent+'c dep '+dep+' 0\n'
+
+    newcontent=newcontent+content
+    file=open(cnffile,'w+')
+    file.write(newcontent)
+    file.close()
+
+
+def WeightMC(secretlst,deplst,epsilon,sigma,pcfile):
+        #secretlst=['tk[1140]']
+        # secretlst=readSecretlst(secretcnf)
+	count=0
+	C=[]
+	wmax=1
+	#formatPCfileHash(pcfile)
+	pivot=int(2*math.exp(1.5)*math.pow((1+1/epsilon),2))
+	print pivot
+	#t=35*math.log(3/sigma,2)
+	#t=int(t)
+	#print t
+	smtfile=pcfile+'.smt2'
+	command='kleaver --print-smtlib -out='+smtfile+' '+pcfile
+	subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True);
+	cnfname=pcfile
+	cnffile=cnfname+'0.cnf'
+	command='stp --output-CNF --out-file='+cnfname+' '+smtfile
+	subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True);
+	setIndCNF(cnffile,secretlst,deplst)
+	#simplifyCNF(cnffile)
+	command='scalmc --unset=1 --mode=1  --pivotAC='+str(pivot)+' --threads='+str(core)+' '+cnffile;
+	try:
+		result=subprocess.check_output(command,stderr=subprocess.STDOUT,shell=True)
+	except subprocess.CalledProcessError as grepexc:                                                                                                   
+		result=grepexc.output
+	keys='Number of solutions is:'
+	index=len(keys)+result.find(keys)
+	s=result[index:]
+	v=re.split('x|\^',s)
+	print v
+	val=int(v[0])
+	base=int(v[1])
+	mag=int(v[2])
+	return val*math.pow(base,mag);
 
