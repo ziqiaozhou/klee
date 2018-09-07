@@ -1,0 +1,27 @@
+#include<stdlib.h>
+#include <pthread.h>
+#include <errno.h>
+#include <mysql.h>
+#include <klee/klee.h>
+int mysql_query(MYSQL *mysql, const char *stmt_str){
+	klee_warning("mysql");
+	return 0;
+}
+MYSQL_ROW	STDCALL mysql_fetch_row(MYSQL_RES *result){
+	klee_warning("mysql_fetch_row");
+	return NULL;
+}
+unsigned long * STDCALL mysql_fetch_lengths(MYSQL_RES *result){
+	klee_warning("mysql_fetch_lengths");   
+	return NULL;
+}
+MYSQL_FIELD *	STDCALL mysql_fetch_field(MYSQL_RES *result){
+	klee_warning("mysql_fetch_field");
+	return NULL;
+}
+MYSQL_RES *     STDCALL mysql_list_fields(MYSQL *mysql, const char *table,
+					  const char *wild){
+	klee_warning("mysql_list_field");
+	return NULL;
+}
+

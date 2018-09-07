@@ -11,8 +11,7 @@
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
 #endif
-//#include "fd.h"
-#include "threads.h"
+#include "fd.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -113,6 +112,10 @@ usage: (klee_init_env) [options] [program arguments]\n\
                               each with size N\n\
   -sym-stdin <N>            - Make stdin symbolic with size N.\n\
   -sym-stdout               - Make stdout symbolic.\n\
+  -save-all-writes          - Allow write operations to execute as expected\n\
+                              even if they exceed the file size. If set to 0, all\n\
+                              writes exceeding the initial file size are discarded.\n\
+                              Note: file offset is always incremented.\n\
   -max-fail <N>             - Allow up to N injected failures\n\
   -fd-fail                  - Shortcut for '-max-fail 1'\n\n");
   }
@@ -204,6 +207,5 @@ usage: (klee_init_env) [options] [program arguments]\n\
 
   klee_init_fds(sym_files, sym_file_len, sym_stdin_len, sym_stdout_flag,
                 save_all_writes_flag, fd_fail);
-  //klee_init_threads();
 }
 

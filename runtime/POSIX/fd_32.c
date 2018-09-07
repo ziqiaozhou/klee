@@ -61,7 +61,7 @@ static void __stat64_to_stat(struct stat64 *a, struct stat *b) {
 }
 
 /***/
-#if 0
+
 int open(const char *pathname, int flags, ...) {
   mode_t mode = 0;
 
@@ -204,4 +204,3 @@ __attribute__((weak)) int open64(const char *pathname, int flags, ...) {
 
   return __fd_open(pathname, flags, mode);
 }
-#endif

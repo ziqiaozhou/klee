@@ -1,2 +1,0 @@
-KLEE: ERROR: /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:89: failed external call: atoi
-KLEE: NOTE: now ignoring this error at this location

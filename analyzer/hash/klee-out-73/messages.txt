@@ -1,3 +1,0 @@
-KLEE: ERROR: /playpen/ziqiao/2project/klee/runtime/Intrinsic/memset.c:14: memory error: out of bound pointer
-KLEE: NOTE: now ignoring this error at this location
-KLEE: halting execution, dumping remaining states

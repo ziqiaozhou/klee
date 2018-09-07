@@ -1,2 +1,0 @@
-KLEE: ERROR: /playpen/ziqiao/2project/klee/analyzer/hash/hash.c:54: external call with symbolic argument: printf
-KLEE: NOTE: now ignoring this error at this location

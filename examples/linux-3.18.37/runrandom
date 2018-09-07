@@ -1,2 +1,0 @@
-ulimit -s unlimited;
-klee -simplify-sym-indices -write-obs -max-memory=0 --search=random-path --search=nurs:covnew --use-batching-search  --disable-inlining  --use-forked-solver --output-module -use-cex-cache --max-memory-inhibit=false  -write-pcs -write-paths -write-sym-paths -write-smt2s  -allow-external-sym-calls -write-test-info -write-cov -write-cvcs -libc=klee mainrandom.bc
