@@ -592,7 +592,7 @@ ExecutionState &BatchingSearcher::selectState() {
     lastState = &baseSearcher->selectState();
     lastStartTime = util::getWallTime();
     lastStartInstructions = stats::instructions;
-	llvm::errs()<<"KLEE: batching select state "<<lastState<<"\n";
+	//llvm::errs()<<"KLEE: batching select state "<<lastState<<"\n";
     return *lastState;
   } else {
     return *lastState;

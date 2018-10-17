@@ -1935,54 +1935,42 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     BranchInst *bi = cast<BranchInst>(i);
     if (bi->isUnconditional()) {
       transferToBasicBlock(bi->getSuccessor(0), bi->getParent(), state);
-    } else {
-      // FIXME: Find a way that we don't have this hidden dependency.
-      assert(bi->getCondition() == bi->getOperand(0) &&
-             "Wrong operand index!");
-      ref<Expr> cond = eval(ki, 0, state).value;
-      Executor::StatePair branches = fork(state, cond, false);
+	} else {
+		// FIXME: Find a way that we don't have this hidden dependency.
+		assert(bi->getCondition() == bi->getOperand(0) &&
+					"Wrong operand index!");
+		ref<Expr> cond = eval(ki, 0, state).value;
+		Executor::StatePair branches = fork(state, cond, false);
 
-      // NOTE: There is a hidden dependency here, markBranchVisited
-      // requires that we still be in the context of the branch
-      // instruction (it reuses its statistic id). Should be cleaned
-      // up with convenient instruction specific data.
-#if MULTITHREAD
-	  if (statsTracker && state.stack().back().kf->trackCoverage)
-#else
-		if (statsTracker && state.stack.back().kf->trackCoverage)
-#endif
-		  statsTracker->markBranchVisited(branches.first, branches.second);
+		// NOTE: There is a hidden dependency here, markBranchVisited
+		// requires that we still be in the context of the branch
+		// instruction (it reuses its statistic id). Should be cleaned
+		// up with convenient instruction specific data.
 
-	  if (branches.first)
-		transferToBasicBlock(bi->getSuccessor(0), bi->getParent(), *branches.first);
-	  if (branches.second)
-		transferToBasicBlock(bi->getSuccessor(1), bi->getParent(), *branches.second);
-	  if(UseIfMerge&&branches.first && branches.second){
-		  //merge
-		  branches.first->try_merge=true;
+		statsTracker->markBranchVisited(branches.first, branches.second);
 
-		  branches.second->try_merge=true;
-		 /* klee::BumpMergingSearcher *mergeSearcher=(klee::BumpMergingSearcher*) searcher;
-		  Instruction *mp0=cast<Instruction>(bi->getSuccessor(0));
-		  Instruction *mp1= cast<Instruction>(bi->getSuccessor(1));
-		   mergeSearcher->insert(mp0, branches.first);
+		if (branches.first)
+		  transferToBasicBlock(bi->getSuccessor(0), bi->getParent(), *branches.first);
+		if (branches.second)
+		  transferToBasicBlock(bi->getSuccessor(1), bi->getParent(), *branches.second);
+		if(UseIfMerge&&branches.first && branches.second){
+			//merge
+			branches.first->try_merge=true;
 
-		   mergeSearcher->insert(mp1, branches.second);
-		  //bi->setSuccessor(0,mergeBlock);
+			branches.second->try_merge=true;
 
-			  // bi->setSuccessor(1,mergeBlock);*/
-	  }
+		}
 
 	}
 	break;
-						}
+  }
   case Instruction::Switch: {
-    SwitchInst *si = cast<SwitchInst>(i);
-    ref<Expr> cond = eval(ki, 0, state).value;
-    BasicBlock *bb = si->getParent();
+	SwitchInst *si = cast<SwitchInst>(i);
+	ref<Expr> cond = eval(ki, 0, state).value;
+	BasicBlock *bb = si->getParent();
 
-    cond = toUnique(state, cond);
-    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(cond)) {
+	cond = toUnique(state, cond);
+	if (ConstantExpr *CE = dyn_cast<ConstantExpr>(cond)) {
       // Somewhat gross to create these all the time, but fine till we
       // switch to an internal rep.
       LLVM_TYPE_Q llvm::IntegerType *Ty = 
